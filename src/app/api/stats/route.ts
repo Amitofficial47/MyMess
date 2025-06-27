@@ -12,8 +12,8 @@
 // 		return NextResponse.json({ error: "Configuration error" }, { status: 500 });
 // 	}
 
-// 	const cookieStore = cookies();
-// 	const token = (await cookieStore).get("token")?.value;
+// 	const cookieStore = await cookies();
+// 	const token = cookieStore.get("token")?.value;
 
 // 	if (!token) {
 // 		return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -25,8 +25,9 @@
 // 			role: string;
 // 			hostel: string;
 // 		};
+// 		const userRole = decoded.role?.toUpperCase();
 
-// 		if (decoded.role?.toUpperCase() === "SUPERADMIN") {
+// 		if (userRole === "SUPERADMIN") {
 // 			const studentCount = await prisma.user.count({
 // 				where: { role: "STUDENT", status: "APPROVED" },
 // 			});
@@ -42,7 +43,7 @@
 // 			});
 // 		}
 
-// 		if (decoded.role?.toUpperCase() === "ADMIN") {
+// 		if (userRole === "ADMIN" || userRole === "MESSADMIN") {
 // 			const studentCount = await prisma.user.count({
 // 				where: {
 // 					role: "STUDENT",
@@ -71,9 +72,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
-
-// This is a static list from the signup form.
-const hostels = ["Ganga", "Yamuna", "Saraswati", "Godavari", "Kaveri"];
+import { hostelNames } from "@/lib/hostels";
 
 export async function GET(req: NextRequest) {
 	const jwtSecret = process.env.JWT_SECRET;
@@ -108,7 +107,7 @@ export async function GET(req: NextRequest) {
 			return NextResponse.json({
 				studentCount,
 				adminCount,
-				hostelCount: hostels.length,
+				hostelCount: hostelNames.length,
 			});
 		}
 
