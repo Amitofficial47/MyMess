@@ -150,8 +150,8 @@ This project is integrated with [ngrok](https://ngrok.com/) to easily create a s
 ### Login Credentials
 
 - **Super Admin:**
-  - Email: `superadmin@messmate.com` (or as configured in `.env`)
-  - Password: `superadmin` (or as configured in `.env`)
+  - Email: `email.com` (or as configured in `.env`)
+  - Password: `password` (or as configured in `.env`)
 - **Admin:** Admins are created by the Super Admin via the "Manage Admins" dashboard.
 - **Student:** Create a new student account through the signup page. The account will be `PENDING` until approved by a hostel admin.
 
