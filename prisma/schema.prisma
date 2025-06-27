@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  name             String
+  email            String    @unique
+  enrollmentNumber String?   @unique
+  course           String?
+  password         String
+  role             Role      @default(STUDENT)
+  status           VerificationStatus @default(PENDING)
+  hostel           String
+  avatar           String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model MenuItem {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  dayOfWeek   DayOfWeek
+  mealType    MealType
+  item        String
+  notes       String?
+  available   Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+  SUPERADMIN
+}
+
+enum MealType {
+  Breakfast
+  Lunch
+  Dinner
+}
+
+enum DayOfWeek {
+  Monday
+  Tuesday
+  Wednesday
+  Thursday
+  Friday
+  Saturday
+  Sunday
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
