@@ -1,8 +1,8 @@
-# MessMate: Hostel Mess Management System
+# MyMess - Smart Hostel Mess Management System
 
-MessMate is a comprehensive, modern web application designed to streamline hostel mess operations. It provides a seamless interface for both students and administrators to manage daily meals, track consumption, handle billing, and facilitate communication.
+MyMess is a comprehensive, modern web application designed to streamline hostel mess operations. It provides a seamless interface for both students and administrators to manage daily meals, track consumption, handle billing, and facilitate communication.
 
-Built with Next.js and ShadCN UI, MessMate offers a responsive, user-friendly experience on both desktop and mobile devices.
+Built with Next.js and ShadCN UI, MyMess offers a responsive, user-friendly experience on both desktop and mobile devices.
 
 ## ✨ Key Features
 
@@ -50,7 +50,7 @@ Built with Next.js and ShadCN UI, MessMate offers a responsive, user-friendly ex
 
 ## 🏁 Getting Started
 
-Follow these instructions to set up and run the MessMate project on your local machine.
+Follow these instructions to set up and run the MyMess project on your local machine.
 
 ### Prerequisites
 
@@ -87,7 +87,7 @@ Make sure you have [Node.js](https://nodejs.org/) (version 18 or later) and [npm
     JWT_SECRET="your-super-secret-jwt-key"
 
     # Credentials for the initial Super Admin account that will be created by the seed script.
-    SUPERADMIN_EMAIL="superadmin@messmate.com"
+    SUPERADMIN_EMAIL="superadmin@mymess.com"
     SUPERADMIN_PASSWORD="superadmin"
 
     # The public URL of your application, especially important when using ngrok.
@@ -150,8 +150,6 @@ This project is integrated with [ngrok](https://ngrok.com/) to easily create a s
 ### Login Credentials
 
 - **Super Admin:**
-  - Email: `email.com` (or as configured in `.env`)
-  - Password: `password` (or as configured in `.env`)
 - **Admin:** Admins are created by the Super Admin via the "Manage Admins" dashboard.
 - **Student:** Create a new student account through the signup page. The account will be `PENDING` until approved by a hostel admin.
 
