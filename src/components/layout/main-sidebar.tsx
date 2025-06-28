@@ -24,8 +24,10 @@
 // 	Settings,
 // 	Upload,
 // 	User,
-// 	ShieldCheck,
+// 	Shield,
 // 	UserCheck,
+// 	ShieldCheck,
+// 	Contact2,
 // } from "lucide-react";
 // import {
 // 	Tooltip,
@@ -46,9 +48,19 @@
 // 	{ href: "/student/pay-bill", icon: CreditCard, label: "Pay Bill" },
 // ];
 
+// const messAdminNavItems = [
+// 	{ href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
+// 	{ href: "/profile", icon: User, label: "Profile" },
+// ];
+
 // const baseAdminNavItems = [
 // 	{ href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
 // 	{ href: "/profile", icon: User, label: "Profile" },
+// 	{
+// 		href: "/admin/manage-mess-admins",
+// 		icon: Contact2,
+// 		label: "Manage Mess Admins",
+// 	},
 // 	{ href: "/admin/verify-students", icon: UserCheck, label: "Verify Students" },
 // 	{ href: "/admin/student-details", icon: Users, label: "Student Details" },
 // 	{ href: "/admin/menu", icon: Settings, label: "Edit Menu" },
@@ -66,15 +78,13 @@
 // 	let navItems = studentNavItems;
 // 	if (user?.role === "admin") {
 // 		navItems = baseAdminNavItems;
+// 	} else if (user?.role === "messadmin") {
+// 		navItems = messAdminNavItems;
 // 	} else if (user?.role === "superadmin") {
 // 		navItems = [
 // 			baseAdminNavItems[0], // Dashboard
 // 			baseAdminNavItems[1], // Profile
-// 			{
-// 				href: "/admin/manage-admins",
-// 				icon: ShieldCheck,
-// 				label: "Manage Admins",
-// 			},
+// 			{ href: "/admin/manage-admins", icon: Shield, label: "Manage Admins" },
 // 			...baseAdminNavItems.slice(2),
 // 		];
 // 	}
@@ -115,7 +125,7 @@
 // 							<path d="m4.93 4.93 1.41 1.41" />
 // 							<path d="m17.66 6.34 1.41-1.41" />
 // 						</svg>
-// 						<span className="text-xl font-semibold text-primary">MessMate</span>
+// 						<span className="text-xl font-semibold text-primary">MyMess</span>
 // 					</div>
 // 				</div>
 // 			</SidebarHeader>
@@ -214,6 +224,9 @@ const studentNavItems = [
 const messAdminNavItems = [
 	{ href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
 	{ href: "/profile", icon: User, label: "Profile" },
+	{ href: "/admin/menu", icon: Settings, label: "Edit Menu" },
+	{ href: "/admin/notifications", icon: Bell, label: "Add Notification" },
+	{ href: "/admin/feedback", icon: MessageSquare, label: "View Feedback" },
 ];
 
 const baseAdminNavItems = [
@@ -226,7 +239,6 @@ const baseAdminNavItems = [
 	},
 	{ href: "/admin/verify-students", icon: UserCheck, label: "Verify Students" },
 	{ href: "/admin/student-details", icon: Users, label: "Student Details" },
-	{ href: "/admin/menu", icon: Settings, label: "Edit Menu" },
 	{ href: "/admin/history", icon: History, label: "Meal History" },
 	{ href: "/admin/bills", icon: Upload, label: "Upload Bill" },
 	{ href: "/admin/notifications", icon: Bell, label: "Add Notification" },
@@ -244,11 +256,13 @@ export function MainSidebar() {
 	} else if (user?.role === "messadmin") {
 		navItems = messAdminNavItems;
 	} else if (user?.role === "superadmin") {
+		// Superadmin gets admin items plus their own extras
 		navItems = [
 			baseAdminNavItems[0], // Dashboard
 			baseAdminNavItems[1], // Profile
 			{ href: "/admin/manage-admins", icon: Shield, label: "Manage Admins" },
-			...baseAdminNavItems.slice(2),
+			...baseAdminNavItems.slice(2), // All other admin items
+			{ href: "/admin/menu", icon: Settings, label: "Edit Menu" }, // Superadmin can also edit menu
 		];
 	}
 

@@ -51,6 +51,7 @@
 // } from "@/components/ui/alert-dialog";
 // import { Skeleton } from "@/components/ui/skeleton";
 // import { useAuth } from "@/contexts/auth-provider";
+// import { hostelNames } from "@/lib/hostels";
 
 // const messAdminFormSchema = z.object({
 // 	name: z.string().min(2, "Name must be at least 2 characters."),
@@ -58,8 +59,6 @@
 // 	password: z.string().min(6, "Password must be at least 6 characters."),
 // 	hostel: z.string().min(1, "Please select a hostel."),
 // });
-
-// const hostels = ["Ganga", "Yamuna", "Saraswati", "Godavari", "Kaveri"];
 
 // type MessAdminUser = {
 // 	id: string;
@@ -149,7 +148,11 @@
 // 	}
 
 // 	const allowedHostels =
-// 		user?.role === "superadmin" ? hostels : user?.hostel ? [user.hostel] : [];
+// 		user?.role === "superadmin"
+// 			? hostelNames
+// 			: user?.hostel
+// 			? [user.hostel]
+// 			: [];
 
 // 	return (
 // 		<div className="flex flex-col gap-6">
@@ -393,6 +396,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/auth-provider";
 import { hostelNames } from "@/lib/hostels";
+import { fetchApi } from "@/lib/api";
 
 const messAdminFormSchema = z.object({
 	name: z.string().min(2, "Name must be at least 2 characters."),
@@ -427,7 +431,7 @@ export default function ManageMessAdminsPage() {
 	async function fetchMessAdmins() {
 		setIsLoading(true);
 		try {
-			const res = await fetch("/api/mess-admins");
+			const res = await fetchApi("/api/mess-admins");
 			if (res.ok) {
 				const data = await res.json();
 				setMessAdmins(data);
@@ -444,7 +448,7 @@ export default function ManageMessAdminsPage() {
 	async function onSubmit(values: z.infer<typeof messAdminFormSchema>) {
 		setIsSubmitting(true);
 		try {
-			const res = await fetch("/api/mess-admins", {
+			const res = await fetchApi("/api/mess-admins", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(values),
@@ -473,7 +477,9 @@ export default function ManageMessAdminsPage() {
 
 	async function deleteMessAdmin(id: string) {
 		try {
-			const res = await fetch(`/api/mess-admins/${id}`, { method: "DELETE" });
+			const res = await fetchApi(`/api/mess-admins/${id}`, {
+				method: "DELETE",
+			});
 			if (res.ok) {
 				toast({
 					title: "Mess Admin Deleted",

@@ -51,7 +51,11 @@
 
 // 		const clientUser = {
 // 			...user,
-// 			role: user.role.toLowerCase() as "student" | "admin" | "superadmin",
+// 			role: user.role.toLowerCase() as
+// 				| "student"
+// 				| "admin"
+// 				| "superadmin"
+// 				| "messadmin",
 // 			status: user.status,
 // 		};
 
@@ -73,12 +77,11 @@
 // 	}
 // }
 
-
-
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
+import type { VerificationStatus } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
 	const jwtSecret = process.env.JWT_SECRET;
@@ -106,6 +109,7 @@ export async function GET(req: NextRequest) {
 			where: { id: decoded.userId },
 			select: {
 				id: true,
+				displayId: true,
 				name: true,
 				email: true,
 				enrollmentNumber: true,
@@ -126,6 +130,10 @@ export async function GET(req: NextRequest) {
 			return response;
 		}
 
+		// Data Healing: Ensure status is never null for the client.
+		const finalStatus: VerificationStatus =
+			user.status || (user.role === "STUDENT" ? "PENDING" : "APPROVED");
+
 		const clientUser = {
 			...user,
 			role: user.role.toLowerCase() as
@@ -133,7 +141,7 @@ export async function GET(req: NextRequest) {
 				| "admin"
 				| "superadmin"
 				| "messadmin",
-			status: user.status,
+			status: finalStatus,
 		};
 
 		return NextResponse.json(clientUser, { status: 200 });

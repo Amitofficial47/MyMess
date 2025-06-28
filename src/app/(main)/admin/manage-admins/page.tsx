@@ -50,6 +50,7 @@
 // 	AlertDialogTrigger,
 // } from "@/components/ui/alert-dialog";
 // import { Skeleton } from "@/components/ui/skeleton";
+// import { hostelNames } from "@/lib/hostels";
 
 // const adminFormSchema = z.object({
 // 	name: z.string().min(2, "Name must be at least 2 characters."),
@@ -57,8 +58,6 @@
 // 	password: z.string().min(6, "Password must be at least 6 characters."),
 // 	hostel: z.string().min(1, "Please select a hostel."),
 // });
-
-// const hostels = ["Ganga", "Yamuna", "Saraswati", "Godavari", "Kaveri"];
 
 // type AdminUser = {
 // 	id: string;
@@ -233,7 +232,7 @@
 // 													</SelectTrigger>
 // 												</FormControl>
 // 												<SelectContent>
-// 													{hostels.map((h) => (
+// 													{hostelNames.map((h) => (
 // 														<SelectItem key={h} value={h}>
 // 															{h}
 // 														</SelectItem>
@@ -392,6 +391,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { hostelNames } from "@/lib/hostels";
+import { fetchApi } from "@/lib/api";
 
 const adminFormSchema = z.object({
 	name: z.string().min(2, "Name must be at least 2 characters."),
@@ -426,7 +426,7 @@ export default function ManageAdminsPage() {
 	async function fetchAdmins() {
 		setIsLoading(true);
 		try {
-			const res = await fetch("/api/admins");
+			const res = await fetchApi("/api/admins");
 			if (res.ok) {
 				const data = await res.json();
 				setAdmins(data);
@@ -446,7 +446,7 @@ export default function ManageAdminsPage() {
 	async function onSubmit(values: z.infer<typeof adminFormSchema>) {
 		setIsSubmitting(true);
 		try {
-			const res = await fetch("/api/admins", {
+			const res = await fetchApi("/api/admins", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(values),
@@ -475,7 +475,7 @@ export default function ManageAdminsPage() {
 
 	async function deleteAdmin(id: string) {
 		try {
-			const res = await fetch(`/api/admins/${id}`, { method: "DELETE" });
+			const res = await fetchApi(`/api/admins/${id}`, { method: "DELETE" });
 			if (res.ok) {
 				toast({
 					title: "Admin Deleted",

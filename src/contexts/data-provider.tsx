@@ -1,3 +1,304 @@
+// "use client";
+
+// import React, {
+// 	createContext,
+// 	useContext,
+// 	ReactNode,
+// 	useState,
+// 	useEffect,
+// 	useCallback,
+// } from "react";
+// import type {
+// 	User,
+// 	WeeklyMenu,
+// 	MealSelection,
+// 	Notification,
+// 	Bill,
+// 	Feedback,
+// 	DayOfWeek,
+// 	MealType,
+// 	MenuItem,
+// } from "@/lib/types";
+// import { useAuth } from "./auth-provider";
+
+// // --- Context Definition ---
+// interface DataContextProps {
+// 	users: Omit<User, "password" | "email">[];
+// 	menu: WeeklyMenu;
+// 	updateMenuItem: (
+// 		day: DayOfWeek,
+// 		mealType: MealType,
+// 		menuItem: Partial<MenuItem>
+// 	) => Promise<boolean>;
+// 	mealSelections: MealSelection[];
+// 	addMealSelection: (
+// 		userId: string,
+// 		mealType: MealType,
+// 		date: string
+// 	) => Promise<{ success: boolean; selection?: MealSelection; error?: string }>;
+// 	verifyToken: (token: string) => Promise<{ success: boolean; error?: string }>;
+// 	notifications: Notification[];
+// 	addNotification: (title: string, message: string) => Promise<boolean>;
+// 	deleteNotification: (id: string) => Promise<boolean>;
+// 	bills: Bill[];
+// 	addBill: (fileName: string, month: string) => Promise<boolean>;
+// 	deleteBill: (id: string) => Promise<boolean>;
+// 	feedback: Feedback[];
+// 	addFeedback: (subject: string, message: string) => Promise<boolean>;
+// }
+
+// const DataContext = createContext<DataContextProps | undefined>(undefined);
+
+// // --- Provider Component ---
+// export function DataProvider({ children }: { children: ReactNode }) {
+// 	const { user } = useAuth();
+
+// 	const [users, setUsers] = useState<Omit<User, "password" | "email">[]>([]);
+// 	const [menu, setMenu] = useState<WeeklyMenu>({} as WeeklyMenu);
+// 	const [mealSelections, setMealSelections] = useState<MealSelection[]>([]);
+// 	const [notifications, setNotifications] = useState<Notification[]>([]);
+// 	const [bills, setBills] = useState<Bill[]>([]);
+// 	const [feedback, setFeedback] = useState<Feedback[]>([]);
+
+// 	const fetchAllData = useCallback(async () => {
+// 		if (!user) return;
+// 		try {
+// 			const [
+// 				usersRes,
+// 				selectionsRes,
+// 				menuRes,
+// 				notificationsRes,
+// 				billsRes,
+// 				feedbackRes,
+// 			] = await Promise.all([
+// 				fetch("/api/users"),
+// 				fetch("/api/meal-selections"),
+// 				fetch("/api/menu"),
+// 				fetch("/api/notifications"),
+// 				fetch("/api/bills"),
+// 				fetch("/api/feedback"),
+// 			]);
+
+// 			if (usersRes.ok) setUsers(await usersRes.json());
+// 			if (selectionsRes.ok) setMealSelections(await selectionsRes.json());
+// 			if (notificationsRes.ok) setNotifications(await notificationsRes.json());
+// 			if (billsRes.ok) setBills(await billsRes.json());
+// 			if (feedbackRes.ok) setFeedback(await feedbackRes.json());
+
+// 			if (menuRes.ok) {
+// 				const menuItems: MenuItem[] = await menuRes.json();
+// 				const weeklyMenu = menuItems.reduce((acc, item) => {
+// 					if (!acc[item.dayOfWeek]) acc[item.dayOfWeek] = {} as any;
+// 					acc[item.dayOfWeek][item.mealType] = item;
+// 					return acc;
+// 				}, {} as WeeklyMenu);
+// 				setMenu(weeklyMenu);
+// 			}
+// 		} catch (error) {
+// 			console.error("Failed to fetch data:", error);
+// 		}
+// 	}, [user]);
+
+// 	useEffect(() => {
+// 		fetchAllData();
+// 	}, [fetchAllData]);
+
+// 	const updateMenuItem = async (
+// 		day: DayOfWeek,
+// 		mealType: MealType,
+// 		menuItem: Partial<MenuItem>
+// 	): Promise<boolean> => {
+// 		try {
+// 			const res = await fetch("/api/menu", {
+// 				method: "PATCH",
+// 				headers: { "Content-Type": "application/json" },
+// 				body: JSON.stringify({ day, mealType, ...menuItem }),
+// 			});
+// 			if (res.ok) {
+// 				const updatedItem = await res.json();
+// 				setMenu((prev) => ({
+// 					...prev,
+// 					[day]: { ...prev[day], [mealType]: updatedItem },
+// 				}));
+// 				return true;
+// 			}
+// 			return false;
+// 		} catch (error) {
+// 			console.error("Failed to update menu item:", error);
+// 			return false;
+// 		}
+// 	};
+
+// 	const addMealSelection = async (
+// 		userId: string,
+// 		mealType: MealType,
+// 		date: string
+// 	): Promise<{
+// 		success: boolean;
+// 		selection?: MealSelection;
+// 		error?: string;
+// 	}> => {
+// 		try {
+// 			const res = await fetch("/api/meal-selections", {
+// 				method: "POST",
+// 				headers: { "Content-Type": "application/json" },
+// 				body: JSON.stringify({ mealType, date }),
+// 			});
+// 			const data = await res.json();
+// 			if (!res.ok) {
+// 				return { success: false, error: data.error };
+// 			}
+// 			setMealSelections((prev) => [data, ...prev]);
+// 			return { success: true, selection: data };
+// 		} catch (error) {
+// 			return { success: false, error: "An unexpected error occurred." };
+// 		}
+// 	};
+
+// 	const verifyToken = async (
+// 		token: string
+// 	): Promise<{ success: boolean; error?: string }> => {
+// 		try {
+// 			const res = await fetch("/api/meal-selections/verify", {
+// 				method: "PATCH",
+// 				headers: { "Content-Type": "application/json" },
+// 				body: JSON.stringify({ token }),
+// 			});
+// 			const data = await res.json();
+// 			if (!res.ok) {
+// 				return { success: false, error: data.error };
+// 			}
+// 			setMealSelections((prev) =>
+// 				prev.map((sel) =>
+// 					sel.id === data.id ? { ...sel, consumed: true } : sel
+// 				)
+// 			);
+// 			return { success: true };
+// 		} catch (error) {
+// 			return { success: false, error: "An unexpected error occurred." };
+// 		}
+// 	};
+
+// 	const addNotification = async (
+// 		title: string,
+// 		message: string
+// 	): Promise<boolean> => {
+// 		try {
+// 			const res = await fetch("/api/notifications", {
+// 				method: "POST",
+// 				headers: { "Content-Type": "application/json" },
+// 				body: JSON.stringify({ title, message }),
+// 			});
+// 			if (res.ok) {
+// 				const newNotification = await res.json();
+// 				setNotifications((prev) => [newNotification, ...prev]);
+// 				return true;
+// 			}
+// 			return false;
+// 		} catch (error) {
+// 			console.error("Failed to add notification:", error);
+// 			return false;
+// 		}
+// 	};
+
+// 	const deleteNotification = async (id: string): Promise<boolean> => {
+// 		try {
+// 			const res = await fetch(`/api/notifications/${id}`, { method: "DELETE" });
+// 			if (res.ok) {
+// 				setNotifications((prev) => prev.filter((n) => n.id !== id));
+// 				return true;
+// 			}
+// 			return false;
+// 		} catch (error) {
+// 			console.error("Failed to delete notification:", error);
+// 			return false;
+// 		}
+// 	};
+
+// 	const addBill = async (fileName: string, month: string): Promise<boolean> => {
+// 		try {
+// 			const res = await fetch("/api/bills", {
+// 				method: "POST",
+// 				headers: { "Content-Type": "application/json" },
+// 				body: JSON.stringify({ fileName, month }),
+// 			});
+// 			if (res.ok) {
+// 				const newBill = await res.json();
+// 				setBills((prev) => [newBill, ...prev]);
+// 				return true;
+// 			}
+// 			return false;
+// 		} catch (error) {
+// 			console.error("Failed to add bill:", error);
+// 			return false;
+// 		}
+// 	};
+
+// 	const deleteBill = async (id: string): Promise<boolean> => {
+// 		try {
+// 			const res = await fetch(`/api/bills/${id}`, { method: "DELETE" });
+// 			if (res.ok) {
+// 				setBills((prev) => prev.filter((b) => b.id !== id));
+// 				return true;
+// 			}
+// 			return false;
+// 		} catch (error) {
+// 			console.error("Failed to delete bill:", error);
+// 			return false;
+// 		}
+// 	};
+
+// 	const addFeedback = async (
+// 		subject: string,
+// 		message: string
+// 	): Promise<boolean> => {
+// 		try {
+// 			const res = await fetch("/api/feedback", {
+// 				method: "POST",
+// 				headers: { "Content-Type": "application/json" },
+// 				body: JSON.stringify({ subject, message }),
+// 			});
+// 			if (res.ok) {
+// 				const newFeedback = await res.json();
+// 				setFeedback((prev) => [newFeedback, ...prev]);
+// 				return true;
+// 			}
+// 			return false;
+// 		} catch (error) {
+// 			console.error("Failed to add feedback:", error);
+// 			return false;
+// 		}
+// 	};
+
+// 	const value = {
+// 		users,
+// 		menu,
+// 		updateMenuItem,
+// 		mealSelections,
+// 		addMealSelection,
+// 		verifyToken,
+// 		notifications,
+// 		addNotification,
+// 		deleteNotification,
+// 		bills,
+// 		addBill,
+// 		deleteBill,
+// 		feedback,
+// 		addFeedback,
+// 	};
+
+// 	return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+// }
+
+// // --- Custom Hook ---
+// export function useData() {
+// 	const context = useContext(DataContext);
+// 	if (context === undefined) {
+// 		throw new Error("useData must be used within a DataProvider");
+// 	}
+// 	return context;
+// }
+
 "use client";
 
 import React, {
@@ -6,6 +307,7 @@ import React, {
 	ReactNode,
 	useState,
 	useEffect,
+	useCallback,
 } from "react";
 import type {
 	User,
@@ -18,264 +320,263 @@ import type {
 	MealType,
 	MenuItem,
 } from "@/lib/types";
-import { generateToken } from "@/lib/utils";
 import { useAuth } from "./auth-provider";
-
-// This context will now primarily handle frontend-simulated data that hasn't been migrated to the backend.
-// User data is now fetched via the AuthProvider and API routes.
-
-// --- Initial Data ---
-// This data is used if localStorage is empty.
-const initialMenu: WeeklyMenu = {
-	Monday: {
-		Breakfast: { item: "Poha, Jalebi", available: true },
-		Lunch: { item: "Rajma, Rice, Roti", available: true },
-		Dinner: { item: "Aloo Gobi, Roti", available: true },
-	},
-	Tuesday: {
-		Breakfast: { item: "Idli, Sambar", available: true },
-		Lunch: { item: "Chole Bhature", available: true },
-		Dinner: { item: "Paneer Butter Masala, Roti", available: true },
-	},
-	Wednesday: {
-		Breakfast: { item: "Aloo Paratha, Curd", available: true },
-		Lunch: { item: "Kadhi Pakoda, Rice", available: true },
-		Dinner: { item: "Mix Veg, Dal, Roti", available: true },
-	},
-	Thursday: {
-		Breakfast: { item: "Upma, Coconut Chutney", available: true },
-		Lunch: { item: "Dal Makhani, Naan", available: true },
-		Dinner: { item: "Bhindi Masala, Roti", available: true },
-	},
-	Friday: {
-		Breakfast: { item: "Dosa, Sambar", available: true },
-		Lunch: { item: "Veg Biryani, Raita", available: true },
-		Dinner: { item: "Malai Kofta, Roti", available: true },
-	},
-	Saturday: {
-		Breakfast: { item: "Masala Oats", available: true },
-		Lunch: { item: "Special Thali", available: true },
-		Dinner: { item: "Pasta", available: true },
-	},
-	Sunday: {
-		Breakfast: { item: "Puri Sabji", available: true },
-		Lunch: { item: "Paneer Tikka, Rice", available: true },
-		Dinner: { item: "Closed", available: false },
-	},
-};
+import { fetchApi } from "@/lib/api";
 
 // --- Context Definition ---
 interface DataContextProps {
 	users: Omit<User, "password" | "email">[];
 	menu: WeeklyMenu;
-	setMenu: (menu: WeeklyMenu) => void;
 	updateMenuItem: (
 		day: DayOfWeek,
 		mealType: MealType,
-		menuItem: MenuItem
-	) => void;
+		menuItem: Partial<MenuItem>
+	) => Promise<boolean>;
 	mealSelections: MealSelection[];
 	addMealSelection: (
 		userId: string,
 		mealType: MealType,
 		date: string
-	) => MealSelection | null;
-	verifyToken: (token: string) => boolean;
+	) => Promise<{ success: boolean; selection?: MealSelection; error?: string }>;
+	verifyToken: (token: string) => Promise<{ success: boolean; error?: string }>;
 	notifications: Notification[];
-	addNotification: (title: string, message: string) => void;
-	deleteNotification: (id: string) => void;
+	addNotification: (title: string, message: string) => Promise<boolean>;
+	deleteNotification: (id: string) => Promise<boolean>;
 	bills: Bill[];
-	addBill: (fileName: string, month: string) => void;
-	deleteBill: (id: string) => void;
+	addBill: (fileName: string, month: string) => Promise<boolean>;
+	deleteBill: (id: string) => Promise<boolean>;
 	feedback: Feedback[];
-	addFeedback: (
-		userId: string,
-		userName: string,
-		subject: string,
-		message: string
-	) => void;
+	addFeedback: (subject: string, message: string) => Promise<boolean>;
 }
 
 const DataContext = createContext<DataContextProps | undefined>(undefined);
 
-// A separate hook for managing localStorage to keep the provider clean.
-function usePersistentState<T>(
-	key: string,
-	initialValue: T
-): [T, React.Dispatch<React.SetStateAction<T>>] {
-	const [state, setState] = useState<T>(() => {
-		if (typeof window === "undefined") {
-			return initialValue;
-		}
-		try {
-			const item = window.localStorage.getItem(key);
-			return item ? JSON.parse(item) : initialValue;
-		} catch (error) {
-			console.warn(`Error reading localStorage key “${key}”:`, error);
-			return initialValue;
-		}
-	});
-
-	const setWithPersistence = (value: React.SetStateAction<T>) => {
-		try {
-			const valueToStore = value instanceof Function ? value(state) : value;
-			setState(valueToStore);
-			if (typeof window !== "undefined") {
-				window.localStorage.setItem(key, JSON.stringify(valueToStore));
-			}
-		} catch (error) {
-			console.error(`Error writing to localStorage key “${key}”:`, error);
-		}
-	};
-
-	return [state, setWithPersistence];
-}
-
 // --- Provider Component ---
 export function DataProvider({ children }: { children: ReactNode }) {
 	const { user } = useAuth();
-	const [users, setUsers] = useState<Omit<User, "password" | "email">[]>([]);
 
-	// Fetch all users if the current user is an admin for display purposes (e.g., history page)
-	useEffect(() => {
-		const fetchUsers = async () => {
-			if (user?.role === "admin" || user?.role === "superadmin") {
-				try {
-					const res = await fetch("/api/users");
-					if (res.ok) {
-						const data = await res.json();
-						setUsers(data);
-					} else {
-						console.error("Failed to fetch users");
-						setUsers([]);
-					}
-				} catch (error) {
-					console.error("Error fetching users:", error);
-					setUsers([]);
-				}
-			} else {
-				setUsers([]);
+	const [users, setUsers] = useState<Omit<User, "password" | "email">[]>([]);
+	const [menu, setMenu] = useState<WeeklyMenu>({} as WeeklyMenu);
+	const [mealSelections, setMealSelections] = useState<MealSelection[]>([]);
+	const [notifications, setNotifications] = useState<Notification[]>([]);
+	const [bills, setBills] = useState<Bill[]>([]);
+	const [feedback, setFeedback] = useState<Feedback[]>([]);
+
+	const fetchAllData = useCallback(async () => {
+		if (!user) return;
+		try {
+			const [
+				usersRes,
+				selectionsRes,
+				menuRes,
+				notificationsRes,
+				billsRes,
+				feedbackRes,
+			] = await Promise.all([
+				fetchApi("/api/users"),
+				fetchApi("/api/meal-selections"),
+				fetchApi("/api/menu"),
+				fetchApi("/api/notifications"),
+				fetchApi("/api/bills"),
+				fetchApi("/api/feedback"),
+			]);
+
+			if (usersRes.ok) setUsers(await usersRes.json());
+			if (selectionsRes.ok) setMealSelections(await selectionsRes.json());
+			if (notificationsRes.ok) setNotifications(await notificationsRes.json());
+			if (billsRes.ok) setBills(await billsRes.json());
+			if (feedbackRes.ok) setFeedback(await feedbackRes.json());
+
+			if (menuRes.ok) {
+				const menuItems: MenuItem[] = await menuRes.json();
+				const weeklyMenu = menuItems.reduce((acc, item) => {
+					if (!acc[item.dayOfWeek]) acc[item.dayOfWeek] = {} as any;
+					acc[item.dayOfWeek][item.mealType] = item;
+					return acc;
+				}, {} as WeeklyMenu);
+				setMenu(weeklyMenu);
 			}
-		};
-		fetchUsers();
+		} catch (error) {
+			console.error("Failed to fetch data:", error);
+		}
 	}, [user]);
 
-	// The rest of the data remains on localStorage for simulation purposes.
-	// Note: These should be migrated to a database for a real application.
-	const [menu, setMenu] = usePersistentState<WeeklyMenu>(
-		"messmate-menu",
-		initialMenu
-	);
-	const [mealSelections, setMealSelections] = usePersistentState<
-		MealSelection[]
-	>("messmate-meals", []);
-	const [notifications, setNotifications] = usePersistentState<Notification[]>(
-		"messmate-notifications",
-		[]
-	);
-	const [bills, setBills] = usePersistentState<Bill[]>("messmate-bills", []);
-	const [feedback, setFeedback] = usePersistentState<Feedback[]>(
-		"messmate-feedback",
-		[]
-	);
+	useEffect(() => {
+		fetchAllData();
+	}, [fetchAllData]);
 
-	const updateMenuItem = (
+	const updateMenuItem = async (
 		day: DayOfWeek,
 		mealType: MealType,
-		menuItem: MenuItem
-	) => {
-		setMenu((prevMenu) => ({
-			...prevMenu,
-			[day]: { ...prevMenu[day], [mealType]: menuItem },
-		}));
+		menuItem: Partial<MenuItem>
+	): Promise<boolean> => {
+		try {
+			const res = await fetchApi("/api/menu", {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ day, mealType, ...menuItem }),
+			});
+			if (res.ok) {
+				const updatedItem = await res.json();
+				setMenu((prev) => ({
+					...prev,
+					[day]: { ...prev[day], [mealType]: updatedItem },
+				}));
+				return true;
+			}
+			return false;
+		} catch (error) {
+			console.error("Failed to update menu item:", error);
+			return false;
+		}
 	};
 
-	const addMealSelection = (
+	const addMealSelection = async (
 		userId: string,
 		mealType: MealType,
 		date: string
-	): MealSelection | null => {
-		const existingSelection = mealSelections.find(
-			(sel) =>
-				sel.userId === userId && sel.date === date && sel.mealType === mealType
-		);
-		if (existingSelection) {
-			return null;
+	): Promise<{
+		success: boolean;
+		selection?: MealSelection;
+		error?: string;
+	}> => {
+		try {
+			const res = await fetchApi("/api/meal-selections", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ mealType, date }),
+			});
+			const data = await res.json();
+			if (!res.ok) {
+				return { success: false, error: data.error };
+			}
+			setMealSelections((prev) => [data, ...prev]);
+			return { success: true, selection: data };
+		} catch (error) {
+			return { success: false, error: "An unexpected error occurred." };
 		}
-		const newSelection: MealSelection = {
-			id: crypto.randomUUID(),
-			userId,
-			date,
-			mealType,
-			token: generateToken(),
-			consumed: false,
-		};
-		setMealSelections((prev) => [...prev, newSelection]);
-		return newSelection;
 	};
 
-	const verifyToken = (token: string): boolean => {
-		const selectionIndex = mealSelections.findIndex(
-			(sel) => sel.token.toLowerCase() === token.toLowerCase() && !sel.consumed
-		);
-		if (selectionIndex > -1) {
-			const newSelections = [...mealSelections];
-			newSelections[selectionIndex].consumed = true;
-			setMealSelections(newSelections);
-			return true;
+	const verifyToken = async (
+		token: string
+	): Promise<{ success: boolean; error?: string }> => {
+		try {
+			const res = await fetchApi("/api/meal-selections/verify", {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ token }),
+			});
+			const data = await res.json();
+			if (!res.ok) {
+				return { success: false, error: data.error };
+			}
+			setMealSelections((prev) =>
+				prev.map((sel) =>
+					sel.id === data.id ? { ...sel, consumed: true } : sel
+				)
+			);
+			return { success: true };
+		} catch (error) {
+			return { success: false, error: "An unexpected error occurred." };
 		}
-		return false;
 	};
 
-	const addNotification = (title: string, message: string) => {
-		const newNotification: Notification = {
-			id: crypto.randomUUID(),
-			title,
-			message,
-			timestamp: new Date().toISOString(),
-		};
-		setNotifications((prev) => [newNotification, ...prev]);
+	const addNotification = async (
+		title: string,
+		message: string
+	): Promise<boolean> => {
+		try {
+			const res = await fetchApi("/api/notifications", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ title, message }),
+			});
+			if (res.ok) {
+				const newNotification = await res.json();
+				setNotifications((prev) => [newNotification, ...prev]);
+				return true;
+			}
+			return false;
+		} catch (error) {
+			console.error("Failed to add notification:", error);
+			return false;
+		}
 	};
 
-	const deleteNotification = (id: string) => {
-		setNotifications((prev) => prev.filter((n) => n.id !== id));
+	const deleteNotification = async (id: string): Promise<boolean> => {
+		try {
+			const res = await fetchApi(`/api/notifications/${id}`, {
+				method: "DELETE",
+			});
+			if (res.ok) {
+				setNotifications((prev) => prev.filter((n) => n.id !== id));
+				return true;
+			}
+			return false;
+		} catch (error) {
+			console.error("Failed to delete notification:", error);
+			return false;
+		}
 	};
 
-	const addBill = (fileName: string, month: string) => {
-		const newBill: Bill = {
-			id: crypto.randomUUID(),
-			fileName,
-			month,
-			uploadDate: new Date().toISOString(),
-		};
-		setBills((prev) => [newBill, ...prev]);
+	const addBill = async (fileName: string, month: string): Promise<boolean> => {
+		try {
+			const res = await fetchApi("/api/bills", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ fileName, month }),
+			});
+			if (res.ok) {
+				const newBill = await res.json();
+				setBills((prev) => [newBill, ...prev]);
+				return true;
+			}
+			return false;
+		} catch (error) {
+			console.error("Failed to add bill:", error);
+			return false;
+		}
 	};
 
-	const deleteBill = (id: string) => {
-		setBills((prev) => prev.filter((b) => b.id !== id));
+	const deleteBill = async (id: string): Promise<boolean> => {
+		try {
+			const res = await fetchApi(`/api/bills/${id}`, { method: "DELETE" });
+			if (res.ok) {
+				setBills((prev) => prev.filter((b) => b.id !== id));
+				return true;
+			}
+			return false;
+		} catch (error) {
+			console.error("Failed to delete bill:", error);
+			return false;
+		}
 	};
 
-	const addFeedback = (
-		userId: string,
-		userName: string,
+	const addFeedback = async (
 		subject: string,
 		message: string
-	) => {
-		const newFeedback: Feedback = {
-			id: crypto.randomUUID(),
-			userId,
-			userName,
-			subject,
-			message,
-			timestamp: new Date().toISOString(),
-		};
-		setFeedback((prev) => [newFeedback, ...prev]);
+	): Promise<boolean> => {
+		try {
+			const res = await fetchApi("/api/feedback", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ subject, message }),
+			});
+			if (res.ok) {
+				const newFeedback = await res.json();
+				setFeedback((prev) => [newFeedback, ...prev]);
+				return true;
+			}
+			return false;
+		} catch (error) {
+			console.error("Failed to add feedback:", error);
+			return false;
+		}
 	};
 
 	const value = {
 		users,
 		menu,
-		setMenu,
 		updateMenuItem,
 		mealSelections,
 		addMealSelection,

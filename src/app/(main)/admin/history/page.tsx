@@ -36,15 +36,9 @@
 // } from "lucide-react";
 // import { Skeleton } from "@/components/ui/skeleton";
 // import { Label } from "@/components/ui/label";
+// import { hostelNames } from "@/lib/hostels";
 
-// const hostels = [
-// 	"All Hostels",
-// 	"Ganga",
-// 	"Yamuna",
-// 	"Saraswati",
-// 	"Godavari",
-// 	"Kaveri",
-// ];
+// const superAdminHostelOptions = ["All Hostels", ...hostelNames];
 // const MEAL_PRICE = 50;
 
 // const getPastMonths = (count: number) => {
@@ -67,7 +61,7 @@
 // 	const [isClient, setIsClient] = useState(false);
 
 // 	const [superAdminSelectedHostel, setSuperAdminSelectedHostel] =
-// 		useState<string>(hostels[0]);
+// 		useState<string>(superAdminHostelOptions[0]);
 // 	const [selectedMonth, setSelectedMonth] = useState<string>(() =>
 // 		new Date().toLocaleString("default", { month: "long", year: "numeric" })
 // 	);
@@ -135,7 +129,7 @@
 // 									<SelectValue placeholder="Select Hostel" />
 // 								</SelectTrigger>
 // 								<SelectContent>
-// 									{hostels.map((h) => (
+// 									{superAdminHostelOptions.map((h) => (
 // 										<SelectItem key={h} value={h}>
 // 											{h}
 // 										</SelectItem>
@@ -417,8 +411,7 @@ export default function AdminMealHistoryPage() {
 		return { totalMeals, totalAmount };
 	}, [filteredMeals]);
 
-	const getUserName = (userId: string) =>
-		users.find((u) => u.id === userId)?.name || "Unknown User";
+	const getUser = (userId: string) => users.find((u) => u.id === userId);
 
 	return (
 		<div className="flex flex-col gap-6">
@@ -537,27 +530,30 @@ export default function AdminMealHistoryPage() {
 							</TableHeader>
 							<TableBody>
 								{isClient && filteredMeals.length > 0 ? (
-									filteredMeals.map((selection) => (
-										<TableRow key={selection.id}>
-											<TableCell>
-												{new Date(selection.date).toLocaleDateString()}
-											</TableCell>
-											<TableCell className="font-mono">
-												{selection.userId}
-											</TableCell>
-											<TableCell>{getUserName(selection.userId)}</TableCell>
-											<TableCell>{selection.mealType}</TableCell>
-											<TableCell className="font-mono">
-												{selection.token}
-											</TableCell>
-											<TableCell className="text-right">
-												<Badge className="bg-green-600 hover:bg-green-700">
-													<CheckCircle className="h-4 w-4 mr-1" />
-													Consumed
-												</Badge>
-											</TableCell>
-										</TableRow>
-									))
+									filteredMeals.map((selection) => {
+										const student = getUser(selection.userId);
+										return (
+											<TableRow key={selection.id}>
+												<TableCell>
+													{new Date(selection.date).toLocaleDateString()}
+												</TableCell>
+												<TableCell className="font-mono">
+													{student?.displayId || "N/A"}
+												</TableCell>
+												<TableCell>{student?.name || "Unknown User"}</TableCell>
+												<TableCell>{selection.mealType}</TableCell>
+												<TableCell className="font-mono">
+													{selection.token}
+												</TableCell>
+												<TableCell className="text-right">
+													<Badge className="bg-green-600 hover:bg-green-700">
+														<CheckCircle className="h-4 w-4 mr-1" />
+														Consumed
+													</Badge>
+												</TableCell>
+											</TableRow>
+										);
+									})
 								) : (
 									<TableRow>
 										<TableCell colSpan={6} className="h-24 text-center">
@@ -575,37 +571,46 @@ export default function AdminMealHistoryPage() {
 
 					<div className="space-y-4 md:hidden">
 						{isClient && filteredMeals.length > 0 ? (
-							filteredMeals.map((selection) => (
-								<Card key={selection.id} className="border-l-4 border-primary">
-									<CardHeader>
-										<CardTitle className="flex items-center justify-between text-base">
-											<span>{getUserName(selection.userId)}</span>
-											<Badge className="bg-green-600 hover:bg-green-700">
-												<CheckCircle className="mr-1 h-4 w-4" />
-												Consumed
-											</Badge>
-										</CardTitle>
-										<CardDescription className="flex items-center gap-2 pt-1">
-											<User className="h-4 w-4" />
-											ID: <span className="font-mono">{selection.userId}</span>
-										</CardDescription>
-									</CardHeader>
-									<CardContent className="space-y-2">
-										<div className="flex items-center gap-2 text-sm">
-											<Calendar className="h-4 w-4 text-muted-foreground" />
-											<span className="text-muted-foreground">{`${new Date(
-												selection.date
-											).toLocaleDateString()} • ${selection.mealType}`}</span>
-										</div>
-										<div className="flex items-center gap-2 text-sm">
-											<KeyRound className="h-4 w-4 text-muted-foreground" />
-											<span className="font-mono text-muted-foreground">
-												{selection.token}
-											</span>
-										</div>
-									</CardContent>
-								</Card>
-							))
+							filteredMeals.map((selection) => {
+								const student = getUser(selection.userId);
+								return (
+									<Card
+										key={selection.id}
+										className="border-l-4 border-primary"
+									>
+										<CardHeader>
+											<CardTitle className="flex items-center justify-between text-base">
+												<span>{student?.name || "Unknown User"}</span>
+												<Badge className="bg-green-600 hover:bg-green-700">
+													<CheckCircle className="mr-1 h-4 w-4" />
+													Consumed
+												</Badge>
+											</CardTitle>
+											<CardDescription className="flex items-center gap-2 pt-1">
+												<User className="h-4 w-4" />
+												ID:{" "}
+												<span className="font-mono">
+													{student?.displayId || "N/A"}
+												</span>
+											</CardDescription>
+										</CardHeader>
+										<CardContent className="space-y-2">
+											<div className="flex items-center gap-2 text-sm">
+												<Calendar className="h-4 w-4 text-muted-foreground" />
+												<span className="text-muted-foreground">{`${new Date(
+													selection.date
+												).toLocaleDateString()} • ${selection.mealType}`}</span>
+											</div>
+											<div className="flex items-center gap-2 text-sm">
+												<KeyRound className="h-4 w-4 text-muted-foreground" />
+												<span className="font-mono text-muted-foreground">
+													{selection.token}
+												</span>
+											</div>
+										</CardContent>
+									</Card>
+								);
+							})
 						) : (
 							<div className="p-10 text-center text-muted-foreground">
 								{isClient ? (

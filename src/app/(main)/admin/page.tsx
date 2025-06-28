@@ -16,9 +16,6 @@
 // } from "@/components/ui/table";
 // import { Badge } from "@/components/ui/badge";
 // import {
-// 	Coffee,
-// 	Sun,
-// 	Moon,
 // 	Search,
 // 	Hourglass,
 // 	Loader2,
@@ -30,6 +27,8 @@
 // 	Bell,
 // 	FileUp,
 // 	MessageSquare,
+// 	Contact2,
+// 	Shield,
 // } from "lucide-react";
 // import { useForm } from "react-hook-form";
 // import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,6 +43,7 @@
 // import { useAuth } from "@/contexts/auth-provider";
 // import { Skeleton } from "@/components/ui/skeleton";
 // import Link from "next/link";
+// import { fetchApi } from "@/lib/api";
 
 // // Main component to switch between dashboards
 // export default function DashboardPage() {
@@ -57,11 +57,11 @@
 // 		);
 // 	}
 
-// 	return user.role === "superadmin" ? (
-// 		<SuperAdminDashboard />
-// 	) : (
-// 		<AdminDashboard />
-// 	);
+// 	if (user.role === "superadmin") return <SuperAdminDashboard />;
+// 	if (user.role === "admin") return <AdminDashboard />;
+// 	if (user.role === "messadmin") return <MessAdminDashboard />;
+
+// 	return null;
 // }
 
 // // --- Super Admin Dashboard ---
@@ -77,7 +77,7 @@
 // 		async function fetchStats() {
 // 			setIsLoading(true);
 // 			try {
-// 				const res = await fetch("/api/stats");
+// 				const res = await fetchApi("/api/stats");
 // 				if (res.ok) {
 // 					const data = await res.json();
 // 					setStats(data);
@@ -97,8 +97,14 @@
 // 		{
 // 			title: "Manage Admins",
 // 			href: "/admin/manage-admins",
-// 			icon: ShieldCheck,
+// 			icon: Shield,
 // 			description: "Add or remove hostel admins.",
+// 		},
+// 		{
+// 			title: "Manage Mess Admins",
+// 			href: "/admin/manage-mess-admins",
+// 			icon: ShieldCheck,
+// 			description: "Manage token verifiers.",
 // 		},
 // 		{
 // 			title: "Edit Menu",
@@ -111,12 +117,6 @@
 // 			href: "/admin/notifications",
 // 			icon: Bell,
 // 			description: "Broadcast announcements.",
-// 		},
-// 		{
-// 			title: "Upload Bills",
-// 			href: "/admin/bills",
-// 			icon: FileUp,
-// 			description: "Manage monthly student bills.",
 // 		},
 // 	];
 
@@ -214,29 +214,153 @@
 // 	</Card>
 // );
 
-// // --- Regular Admin Dashboard ---
-
+// // --- Token Verification Component (Shared by MessAdmin) ---
 // const verifySchema = z.object({
 // 	token: z.string().min(1, "Token is required."),
 // });
 
-// function AdminDashboard() {
-// 	const { mealSelections, verifyToken, users } = useData();
-// 	const { user } = useAuth();
+// function TokenVerificationSection() {
+// 	const { verifyToken } = useData();
 // 	const { toast } = useToast();
+// 	const [isVerifying, setIsVerifying] = useState(false);
+
+// 	const form = useForm<z.infer<typeof verifySchema>>({
+// 		resolver: zodResolver(verifySchema),
+// 		defaultValues: { token: "" },
+// 	});
+
+// 	const handleVerifyToken = async (values: z.infer<typeof verifySchema>) => {
+// 		setIsVerifying(true);
+// 		const result = await verifyToken(values.token);
+// 		if (result.success) {
+// 			toast({
+// 				title: "Token Verified",
+// 				description: "Meal marked as consumed.",
+// 				className: "bg-green-100 dark:bg-green-900 border-green-400",
+// 			});
+// 		} else {
+// 			toast({
+// 				variant: "destructive",
+// 				title: "Invalid Token",
+// 				description:
+// 					result.error || "This token is invalid or has already been used.",
+// 			});
+// 		}
+// 		form.reset();
+// 		setIsVerifying(false);
+// 	};
+
+// 	return (
+// 		<Card>
+// 			<CardHeader>
+// 				<CardTitle>Verify Token</CardTitle>
+// 			</CardHeader>
+// 			<CardContent>
+// 				<Form {...form}>
+// 					<form
+// 						onSubmit={form.handleSubmit(handleVerifyToken)}
+// 						className="flex items-start gap-2"
+// 					>
+// 						<FormField
+// 							control={form.control}
+// 							name="token"
+// 							render={({ field }) => (
+// 								<FormItem className="flex-grow">
+// 									<FormControl>
+// 										<Input
+// 											placeholder="Enter token..."
+// 											{...field}
+// 											className="font-mono uppercase"
+// 										/>
+// 									</FormControl>
+// 									<FormMessage />
+// 								</FormItem>
+// 							)}
+// 						/>
+// 						<Button type="submit" disabled={isVerifying}>
+// 							{isVerifying ? (
+// 								<Loader2 className="h-4 w-4 animate-spin" />
+// 							) : (
+// 								<Search className="h-4 w-4 mr-2" />
+// 							)}
+// 							Verify
+// 						</Button>
+// 					</form>
+// 				</Form>
+// 			</CardContent>
+// 		</Card>
+// 	);
+// }
+
+// function ActiveTokensTable() {
+// 	const { mealSelections, users } = useData();
 // 	const [today, setToday] = useState<string | null>(null);
-// 	const [stats, setStats] = useState({ studentCount: 0 });
-// 	const [isLoadingStats, setIsLoadingStats] = useState(true);
 
 // 	useEffect(() => {
 // 		setToday(new Date().toISOString().split("T")[0]);
 // 	}, []);
 
+// 	const activeTokens = today
+// 		? mealSelections.filter((sel) => sel.date === today && !sel.consumed)
+// 		: [];
+// 	const getUserName = (userId: string) =>
+// 		users.find((u) => u.id === userId)?.name || "Unknown";
+
+// 	return (
+// 		<Card>
+// 			<CardHeader>
+// 				<CardTitle>Today&apos;s Active Tokens</CardTitle>
+// 			</CardHeader>
+// 			<CardContent>
+// 				<div className="rounded-md border">
+// 					<Table>
+// 						<TableHeader>
+// 							<TableRow>
+// 								<TableHead>Student</TableHead>
+// 								<TableHead>Meal</TableHead>
+// 								<TableHead className="text-right">Status</TableHead>
+// 							</TableRow>
+// 						</TableHeader>
+// 						<TableBody>
+// 							{activeTokens.length > 0 ? (
+// 								activeTokens.map((sel) => (
+// 									<TableRow key={sel.id}>
+// 										<TableCell>{getUserName(sel.userId)}</TableCell>
+// 										<TableCell>{sel.mealType}</TableCell>
+// 										<TableCell className="text-right">
+// 											<Badge variant="secondary">
+// 												<Hourglass className="h-4 w-4 mr-1" />
+// 												Pending
+// 											</Badge>
+// 										</TableCell>
+// 									</TableRow>
+// 								))
+// 							) : (
+// 								<TableRow>
+// 									<TableCell colSpan={3} className="h-24 text-center">
+// 										No active tokens for today.
+// 									</TableCell>
+// 								</TableRow>
+// 							)}
+// 						</TableBody>
+// 					</Table>
+// 				</div>
+// 			</CardContent>
+// 		</Card>
+// 	);
+// }
+
+// // --- Regular Admin Dashboard ---
+// function AdminDashboard() {
+// 	const { user } = useAuth();
+// 	const [stats, setStats] = useState({ studentCount: 0 });
+// 	const [isLoadingStats, setIsLoadingStats] = useState(true);
+
 // 	useEffect(() => {
 // 		async function fetchStats() {
 // 			setIsLoadingStats(true);
 // 			try {
-// 				const res = await fetch("/api/stats");
+// 				const res = await fetchApi("/api/stats");
 // 				if (res.ok) {
 // 					const data = await res.json();
 // 					setStats(data);
@@ -252,50 +376,41 @@
 // 		fetchStats();
 // 	}, []);
 
-// 	const form = useForm<z.infer<typeof verifySchema>>({
-// 		resolver: zodResolver(verifySchema),
-// 		defaultValues: { token: "" },
-// 	});
-
-// 	const todaysSelections = today
-// 		? mealSelections.filter((sel) => sel.date === today)
-// 		: [];
-
-// 	const breakfastCount = todaysSelections.filter(
-// 		(s) => s.mealType === "Breakfast" && s.consumed
-// 	).length;
-// 	const lunchCount = todaysSelections.filter(
-// 		(s) => s.mealType === "Lunch" && s.consumed
-// 	).length;
-// 	const dinnerCount = todaysSelections.filter(
-// 		(s) => s.mealType === "Dinner" && s.consumed
-// 	).length;
-
-// 	const activeTokens = todaysSelections.filter((sel) => !sel.consumed);
-
-// 	const handleVerifyToken = (values: z.infer<typeof verifySchema>) => {
-// 		const success = verifyToken(values.token);
-// 		if (success) {
-// 			toast({
-// 				title: "Token Verified",
-// 				description: "Meal marked as consumed.",
-// 				className: "bg-green-100 dark:bg-green-900 border-green-400",
-// 			});
-// 		} else {
-// 			toast({
-// 				variant: "destructive",
-// 				title: "Invalid Token",
-// 				description: "This token is invalid or has already been used.",
-// 			});
-// 		}
-// 		form.reset();
-// 	};
-
-// 	const getUserName = (userId: string) =>
-// 		users.find((u) => u.id === userId)?.name || "Unknown";
+// 	const quickActions = [
+// 		{
+// 			title: "Verify Students",
+// 			href: "/admin/verify-students",
+// 			icon: UserCheck,
+// 			description: "Approve new student accounts.",
+// 		},
+// 		{
+// 			title: "Student Details",
+// 			href: "/admin/student-details",
+// 			icon: Users,
+// 			description: "View all approved students.",
+// 		},
+// 		{
+// 			title: "Manage Mess Admins",
+// 			href: "/admin/manage-mess-admins",
+// 			icon: Contact2,
+// 			description: "Manage token verifiers.",
+// 		},
+// 		{
+// 			title: "Send Notifications",
+// 			href: "/admin/notifications",
+// 			icon: Bell,
+// 			description: "Broadcast announcements.",
+// 		},
+// 		{
+// 			title: "View Feedback",
+// 			href: "/admin/feedback",
+// 			icon: MessageSquare,
+// 			description: "Review student feedback.",
+// 		},
+// 	];
 
 // 	return (
-// 		<div className="flex flex-col gap-6">
+// 		<div className="flex flex-col gap-8">
 // 			<div className="text-center">
 // 				<h1 className="text-2xl font-bold md:text-3xl lg:text-4xl">
 // 					Admin Dashboard
@@ -304,103 +419,122 @@
 // 			</div>
 
 // 			<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-// 				<OperationalStatCard
+// 				<OverviewStatCard
 // 					title="Students in Hostel"
-// 					count={stats.studentCount}
+// 					value={stats.studentCount}
 // 					icon={Users}
 // 					isLoading={isLoadingStats}
 // 				/>
-// 				<OperationalStatCard
-// 					title="Breakfasts Served"
-// 					count={breakfastCount}
-// 					icon={Coffee}
-// 				/>
-// 				<OperationalStatCard
-// 					title="Lunches Served"
-// 					count={lunchCount}
-// 					icon={Sun}
-// 				/>
-// 				<OperationalStatCard
-// 					title="Dinners Served"
-// 					count={dinnerCount}
-// 					icon={Moon}
-// 				/>
+// 				<Card>
+// 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+// 						<CardTitle className="text-sm font-medium">
+// 							Daily Operations
+// 						</CardTitle>
+// 						<ShieldCheck className="h-4 w-4 text-muted-foreground" />
+// 					</CardHeader>
+// 					<CardContent>
+// 						<div className="text-2xl font-bold">Mess Admin</div>
+// 						<p className="text-xs text-muted-foreground">
+// 							Token verification is handled by Mess Admins.
+// 						</p>
+// 					</CardContent>
+// 				</Card>
+// 			</div>
+
+// 			<div>
+// 				<h2 className="text-xl font-bold md:text-2xl mb-4 text-center md:text-left">
+// 					Quick Actions
+// 				</h2>
+// 				<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+// 					{quickActions.map((action) => (
+// 						<Link href={action.href} key={action.href} className="flex">
+// 							<Card className="hover:bg-accent hover:border-primary transition-colors w-full flex flex-col">
+// 								<CardHeader>
+// 									<div className="flex items-center gap-4">
+// 										<div className="bg-primary/10 p-3 rounded-lg">
+// 											<action.icon className="h-6 w-6 text-primary" />
+// 										</div>
+// 										<CardTitle className="text-lg">{action.title}</CardTitle>
+// 									</div>
+// 								</CardHeader>
+// 								<CardContent className="flex-grow">
+// 									<p className="text-sm text-muted-foreground">
+// 										{action.description}
+// 									</p>
+// 								</CardContent>
+// 							</Card>
+// 						</Link>
+// 					))}
+// 				</div>
+// 			</div>
+// 		</div>
+// 	);
+// }
+
+// // --- Mess Admin Dashboard ---
+// function MessAdminDashboard() {
+// 	const { user } = useAuth();
+
+// 	const quickActions = [
+// 		{
+// 			title: "Edit Menu",
+// 			href: "/admin/menu",
+// 			icon: Settings,
+// 			description: "Update the weekly meal plan.",
+// 		},
+// 		{
+// 			title: "Send Notifications",
+// 			href: "/admin/notifications",
+// 			icon: Bell,
+// 			description: "Broadcast announcements to students.",
+// 		},
+// 		{
+// 			title: "View Feedback",
+// 			href: "/admin/feedback",
+// 			icon: MessageSquare,
+// 			description: "Review all student feedback.",
+// 		},
+// 	];
+
+// 	return (
+// 		<div className="flex flex-col gap-8">
+// 			<div className="text-center">
+// 				<h1 className="text-2xl font-bold md:text-3xl lg:text-4xl">
+// 					Mess Admin Dashboard
+// 				</h1>
+// 				<p className="text-muted-foreground">{user?.hostel} Hostel</p>
 // 			</div>
 
 // 			<div className="grid gap-6 md:grid-cols-2">
-// 				<Card>
-// 					<CardHeader>
-// 						<CardTitle>Verify Token</CardTitle>
-// 					</CardHeader>
-// 					<CardContent>
-// 						<Form {...form}>
-// 							<form
-// 								onSubmit={form.handleSubmit(handleVerifyToken)}
-// 								className="flex items-start gap-2"
-// 							>
-// 								<FormField
-// 									control={form.control}
-// 									name="token"
-// 									render={({ field }) => (
-// 										<FormItem className="flex-grow">
-// 											<FormControl>
-// 												<Input
-// 													placeholder="Enter token..."
-// 													{...field}
-// 													className="font-mono uppercase"
-// 												/>
-// 											</FormControl>
-// 											<FormMessage />
-// 										</FormItem>
-// 									)}
-// 								/>
-// 								<Button type="submit">
-// 									<Search className="h-4 w-4 mr-2" /> Verify
-// 								</Button>
-// 							</form>
-// 						</Form>
-// 					</CardContent>
-// 				</Card>
-// 				<Card>
-// 					<CardHeader>
-// 						<CardTitle>Today&apos;s Active Tokens</CardTitle>
-// 					</CardHeader>
-// 					<CardContent>
-// 						<div className="rounded-md border">
-// 							<Table>
-// 								<TableHeader>
-// 									<TableRow>
-// 										<TableHead>Student</TableHead>
-// 										<TableHead>Meal</TableHead>
-// 										<TableHead className="text-right">Status</TableHead>
-// 									</TableRow>
-// 								</TableHeader>
-// 								<TableBody>
-// 									{activeTokens.length > 0 ? (
-// 										activeTokens.map((sel) => (
-// 											<TableRow key={sel.id}>
-// 												<TableCell>{getUserName(sel.userId)}</TableCell>
-// 												<TableCell>{sel.mealType}</TableCell>
-// 												<TableCell className="text-right">
-// 													<Badge variant="secondary">
-// 														<Hourglass className="h-4 w-4 mr-1" />
-// 														Pending
-// 													</Badge>
-// 												</TableCell>
-// 											</TableRow>
-// 										))
-// 									) : (
-// 										<TableRow>
-// 											<TableCell colSpan={3} className="h-24 text-center">
-// 												No active tokens for today.
-// 											</TableCell>
-// 										</TableRow>
-// 									)}
-// 								</TableBody>
-// 							</Table>
-// 						</div>
-// 					</CardContent>
-// 				</Card>
+// 				<TokenVerificationSection />
+// 				<ActiveTokensTable />
+// 			</div>
+
+// 			<div>
+// 				<h2 className="text-xl font-bold md:text-2xl mb-4 text-center md:text-left">
+// 					Quick Actions
+// 				</h2>
+// 				<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+// 					{quickActions.map((action) => (
+// 						<Link href={action.href} key={action.href} className="flex">
+// 							<Card className="hover:bg-accent hover:border-primary transition-colors w-full flex flex-col">
+// 								<CardHeader>
+// 									<div className="flex items-center gap-4">
+// 										<div className="bg-primary/10 p-3 rounded-lg">
+// 											<action.icon className="h-6 w-6 text-primary" />
+// 										</div>
+// 										<CardTitle className="text-lg">{action.title}</CardTitle>
+// 									</div>
+// 								</CardHeader>
+// 								<CardContent className="flex-grow">
+// 									<p className="text-sm text-muted-foreground">
+// 										{action.description}
+// 									</p>
+// 								</CardContent>
+// 							</Card>
+// 						</Link>
+// 					))}
+// 				</div>
 // 			</div>
 // 		</div>
 // 	);
@@ -450,9 +584,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
-	Coffee,
-	Sun,
-	Moon,
 	Search,
 	Hourglass,
 	Loader2,
@@ -480,6 +611,7 @@ import {
 import { useAuth } from "@/contexts/auth-provider";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
+import { fetchApi } from "@/lib/api";
 
 // Main component to switch between dashboards
 export default function DashboardPage() {
@@ -505,6 +637,7 @@ function SuperAdminDashboard() {
 	const [stats, setStats] = useState({
 		studentCount: 0,
 		adminCount: 0,
+		messAdminCount: 0,
 		hostelCount: 0,
 	});
 	const [isLoading, setIsLoading] = useState(true);
@@ -513,7 +646,7 @@ function SuperAdminDashboard() {
 		async function fetchStats() {
 			setIsLoading(true);
 			try {
-				const res = await fetch("/api/stats");
+				const res = await fetchApi("/api/stats");
 				if (res.ok) {
 					const data = await res.json();
 					setStats(data);
@@ -539,7 +672,7 @@ function SuperAdminDashboard() {
 		{
 			title: "Manage Mess Admins",
 			href: "/admin/manage-mess-admins",
-			icon: ShieldCheck,
+			icon: Contact2,
 			description: "Manage token verifiers.",
 		},
 		{
@@ -575,9 +708,15 @@ function SuperAdminDashboard() {
 					isLoading={isLoading}
 				/>
 				<OverviewStatCard
-					title="Total Admins"
+					title="Hostel Admins"
 					value={stats.adminCount}
-					icon={UserCheck}
+					icon={Shield}
+					isLoading={isLoading}
+				/>
+				<OverviewStatCard
+					title="Mess Admins"
+					value={stats.messAdminCount}
+					icon={Contact2}
 					isLoading={isLoading}
 				/>
 				<OverviewStatCard
@@ -585,12 +724,6 @@ function SuperAdminDashboard() {
 					value={stats.hostelCount}
 					icon={Building}
 					isLoading={isLoading}
-				/>
-				<OverviewStatCard
-					title="System Status"
-					value="Online"
-					icon={ShieldCheck}
-					isLoading={false}
 				/>
 			</div>
 
@@ -650,7 +783,7 @@ const OverviewStatCard = ({
 	</Card>
 );
 
-// --- Token Verification Component (Shared by Admin & MessAdmin) ---
+// --- Token Verification Component (Shared by MessAdmin) ---
 const verifySchema = z.object({
 	token: z.string().min(1, "Token is required."),
 });
@@ -658,14 +791,17 @@ const verifySchema = z.object({
 function TokenVerificationSection() {
 	const { verifyToken } = useData();
 	const { toast } = useToast();
+	const [isVerifying, setIsVerifying] = useState(false);
+
 	const form = useForm<z.infer<typeof verifySchema>>({
 		resolver: zodResolver(verifySchema),
 		defaultValues: { token: "" },
 	});
 
-	const handleVerifyToken = (values: z.infer<typeof verifySchema>) => {
-		const success = verifyToken(values.token);
-		if (success) {
+	const handleVerifyToken = async (values: z.infer<typeof verifySchema>) => {
+		setIsVerifying(true);
+		const result = await verifyToken(values.token);
+		if (result.success) {
 			toast({
 				title: "Token Verified",
 				description: "Meal marked as consumed.",
@@ -675,10 +811,12 @@ function TokenVerificationSection() {
 			toast({
 				variant: "destructive",
 				title: "Invalid Token",
-				description: "This token is invalid or has already been used.",
+				description:
+					result.error || "This token is invalid or has already been used.",
 			});
 		}
 		form.reset();
+		setIsVerifying(false);
 	};
 
 	return (
@@ -708,8 +846,13 @@ function TokenVerificationSection() {
 								</FormItem>
 							)}
 						/>
-						<Button type="submit">
-							<Search className="h-4 w-4 mr-2" /> Verify
+						<Button type="submit" disabled={isVerifying}>
+							{isVerifying ? (
+								<Loader2 className="h-4 w-4 animate-spin" />
+							) : (
+								<Search className="h-4 w-4 mr-2" />
+							)}
+							Verify
 						</Button>
 					</form>
 				</Form>
@@ -778,21 +921,15 @@ function ActiveTokensTable() {
 
 // --- Regular Admin Dashboard ---
 function AdminDashboard() {
-	const { mealSelections } = useData();
 	const { user } = useAuth();
-	const [today, setToday] = useState<string | null>(null);
-	const [stats, setStats] = useState({ studentCount: 0 });
+	const [stats, setStats] = useState({ studentCount: 0, messAdminCount: 0 });
 	const [isLoadingStats, setIsLoadingStats] = useState(true);
-
-	useEffect(() => {
-		setToday(new Date().toISOString().split("T")[0]);
-	}, []);
 
 	useEffect(() => {
 		async function fetchStats() {
 			setIsLoadingStats(true);
 			try {
-				const res = await fetch("/api/stats");
+				const res = await fetchApi("/api/stats");
 				if (res.ok) {
 					const data = await res.json();
 					setStats(data);
@@ -808,22 +945,41 @@ function AdminDashboard() {
 		fetchStats();
 	}, []);
 
-	const todaysSelections = today
-		? mealSelections.filter((sel) => sel.date === today)
-		: [];
-
-	const breakfastCount = todaysSelections.filter(
-		(s) => s.mealType === "Breakfast" && s.consumed
-	).length;
-	const lunchCount = todaysSelections.filter(
-		(s) => s.mealType === "Lunch" && s.consumed
-	).length;
-	const dinnerCount = todaysSelections.filter(
-		(s) => s.mealType === "Dinner" && s.consumed
-	).length;
+	const quickActions = [
+		{
+			title: "Verify Students",
+			href: "/admin/verify-students",
+			icon: UserCheck,
+			description: "Approve new student accounts.",
+		},
+		{
+			title: "Student Details",
+			href: "/admin/student-details",
+			icon: Users,
+			description: "View all approved students.",
+		},
+		{
+			title: "Manage Mess Admins",
+			href: "/admin/manage-mess-admins",
+			icon: Contact2,
+			description: "Manage token verifiers.",
+		},
+		{
+			title: "Send Notifications",
+			href: "/admin/notifications",
+			icon: Bell,
+			description: "Broadcast announcements.",
+		},
+		{
+			title: "View Feedback",
+			href: "/admin/feedback",
+			icon: MessageSquare,
+			description: "Review student feedback.",
+		},
+	];
 
 	return (
-		<div className="flex flex-col gap-6">
+		<div className="flex flex-col gap-8">
 			<div className="text-center">
 				<h1 className="text-2xl font-bold md:text-3xl lg:text-4xl">
 					Admin Dashboard
@@ -831,33 +987,60 @@ function AdminDashboard() {
 				<p className="text-muted-foreground">{user?.hostel} Hostel</p>
 			</div>
 
-			<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-				<OperationalStatCard
+			<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+				<OverviewStatCard
 					title="Students in Hostel"
-					count={stats.studentCount}
+					value={stats.studentCount}
 					icon={Users}
 					isLoading={isLoadingStats}
 				/>
-				<OperationalStatCard
-					title="Breakfasts Served"
-					count={breakfastCount}
-					icon={Coffee}
+				<OverviewStatCard
+					title="Mess Admins in Hostel"
+					value={stats.messAdminCount}
+					icon={Contact2}
+					isLoading={isLoadingStats}
 				/>
-				<OperationalStatCard
-					title="Lunches Served"
-					count={lunchCount}
-					icon={Sun}
-				/>
-				<OperationalStatCard
-					title="Dinners Served"
-					count={dinnerCount}
-					icon={Moon}
-				/>
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="text-sm font-medium">
+							Daily Operations
+						</CardTitle>
+						<ShieldCheck className="h-4 w-4 text-muted-foreground" />
+					</CardHeader>
+					<CardContent>
+						<div className="text-2xl font-bold">Mess Admin</div>
+						<p className="text-xs text-muted-foreground">
+							Token verification is handled by Mess Admins.
+						</p>
+					</CardContent>
+				</Card>
 			</div>
 
-			<div className="grid gap-6 md:grid-cols-2">
-				<TokenVerificationSection />
-				<ActiveTokensTable />
+			<div>
+				<h2 className="text-xl font-bold md:text-2xl mb-4 text-center md:text-left">
+					Quick Actions
+				</h2>
+				<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+					{quickActions.map((action) => (
+						<Link href={action.href} key={action.href} className="flex">
+							<Card className="hover:bg-accent hover:border-primary transition-colors w-full flex flex-col">
+								<CardHeader>
+									<div className="flex items-center gap-4">
+										<div className="bg-primary/10 p-3 rounded-lg">
+											<action.icon className="h-6 w-6 text-primary" />
+										</div>
+										<CardTitle className="text-lg">{action.title}</CardTitle>
+									</div>
+								</CardHeader>
+								<CardContent className="flex-grow">
+									<p className="text-sm text-muted-foreground">
+										{action.description}
+									</p>
+								</CardContent>
+							</Card>
+						</Link>
+					))}
+				</div>
 			</div>
 		</div>
 	);
@@ -866,29 +1049,30 @@ function AdminDashboard() {
 // --- Mess Admin Dashboard ---
 function MessAdminDashboard() {
 	const { user } = useAuth();
-	const { mealSelections } = useData();
-	const [today, setToday] = useState<string | null>(null);
 
-	useEffect(() => {
-		setToday(new Date().toISOString().split("T")[0]);
-	}, []);
-
-	const todaysSelections = today
-		? mealSelections.filter((sel) => sel.date === today)
-		: [];
-
-	const breakfastCount = todaysSelections.filter(
-		(s) => s.mealType === "Breakfast" && s.consumed
-	).length;
-	const lunchCount = todaysSelections.filter(
-		(s) => s.mealType === "Lunch" && s.consumed
-	).length;
-	const dinnerCount = todaysSelections.filter(
-		(s) => s.mealType === "Dinner" && s.consumed
-	).length;
+	const quickActions = [
+		{
+			title: "Edit Menu",
+			href: "/admin/menu",
+			icon: Settings,
+			description: "Update the weekly meal plan.",
+		},
+		{
+			title: "Send Notifications",
+			href: "/admin/notifications",
+			icon: Bell,
+			description: "Broadcast announcements to students.",
+		},
+		{
+			title: "View Feedback",
+			href: "/admin/feedback",
+			icon: MessageSquare,
+			description: "Review all student feedback.",
+		},
+	];
 
 	return (
-		<div className="flex flex-col gap-6">
+		<div className="flex flex-col gap-8">
 			<div className="text-center">
 				<h1 className="text-2xl font-bold md:text-3xl lg:text-4xl">
 					Mess Admin Dashboard
@@ -896,54 +1080,37 @@ function MessAdminDashboard() {
 				<p className="text-muted-foreground">{user?.hostel} Hostel</p>
 			</div>
 
-			<div className="grid gap-6 md:grid-cols-3">
-				<OperationalStatCard
-					title="Breakfasts Served"
-					count={breakfastCount}
-					icon={Coffee}
-				/>
-				<OperationalStatCard
-					title="Lunches Served"
-					count={lunchCount}
-					icon={Sun}
-				/>
-				<OperationalStatCard
-					title="Dinners Served"
-					count={dinnerCount}
-					icon={Moon}
-				/>
-			</div>
-
 			<div className="grid gap-6 md:grid-cols-2">
 				<TokenVerificationSection />
 				<ActiveTokensTable />
 			</div>
+
+			<div>
+				<h2 className="text-xl font-bold md:text-2xl mb-4 text-center md:text-left">
+					Quick Actions
+				</h2>
+				<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+					{quickActions.map((action) => (
+						<Link href={action.href} key={action.href} className="flex">
+							<Card className="hover:bg-accent hover:border-primary transition-colors w-full flex flex-col">
+								<CardHeader>
+									<div className="flex items-center gap-4">
+										<div className="bg-primary/10 p-3 rounded-lg">
+											<action.icon className="h-6 w-6 text-primary" />
+										</div>
+										<CardTitle className="text-lg">{action.title}</CardTitle>
+									</div>
+								</CardHeader>
+								<CardContent className="flex-grow">
+									<p className="text-sm text-muted-foreground">
+										{action.description}
+									</p>
+								</CardContent>
+							</Card>
+						</Link>
+					))}
+				</div>
+			</div>
 		</div>
 	);
 }
-
-const OperationalStatCard = ({
-	title,
-	count,
-	icon: Icon,
-	isLoading = false,
-}: {
-	title: string;
-	count: number;
-	icon: React.ElementType;
-	isLoading?: boolean;
-}) => (
-	<Card>
-		<CardHeader className="flex flex-col items-center justify-center space-y-2 pb-2">
-			<Icon className="h-8 w-8 text-primary" />
-			<CardTitle className="text-base font-semibold">{title}</CardTitle>
-		</CardHeader>
-		<CardContent className="text-center">
-			{isLoading ? (
-				<Skeleton className="h-9 w-12 mx-auto" />
-			) : (
-				<div className="text-3xl font-bold">{count}</div>
-			)}
-		</CardContent>
-	</Card>
-);

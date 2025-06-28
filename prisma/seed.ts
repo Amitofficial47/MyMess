@@ -68,7 +68,10 @@
 // 				email: superAdminEmail,
 // 				password: hashedPassword,
 // 				role: "SUPERADMIN",
-// 				hostel: "All",
+// 				hostel: "All", // Superadmin manages all hostels
+// 				status: "APPROVED", // Superadmin is always approved
+// 				enrollmentNumber: null, // Explicitly set null for non-student roles
+// 				course: null, // Explicitly set null for non-student roles
 // 			},
 // 		});
 // 		console.log(`✅ Created superadmin user with id: ${superAdminUser.id}`);
@@ -118,6 +121,7 @@
 
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { generateUserId } from "@/lib/utils";
 
 const prisma = new PrismaClient();
 
@@ -182,6 +186,7 @@ async function main() {
 		const hashedPassword = await bcrypt.hash(superAdminPassword, 10);
 		superAdminUser = await prisma.user.create({
 			data: {
+				displayId: generateUserId(),
 				name: "Super Admin",
 				email: superAdminEmail,
 				password: hashedPassword,

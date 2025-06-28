@@ -38,15 +38,9 @@
 // 	SelectValue,
 // } from "@/components/ui/select";
 // import { Label } from "@/components/ui/label";
+// import { hostelNames } from "@/lib/hostels";
 
-// const hostels = [
-// 	"All Hostels",
-// 	"Ganga",
-// 	"Yamuna",
-// 	"Saraswati",
-// 	"Godavari",
-// 	"Kaveri",
-// ];
+// const superAdminHostelOptions = ["All Hostels", ...hostelNames];
 
 // type Student = {
 // 	id: string;
@@ -66,7 +60,9 @@
 
 // 	const [students, setStudents] = useState<Student[]>([]);
 // 	const [isLoading, setIsLoading] = useState(true);
-// 	const [selectedHostel, setSelectedHostel] = useState<string>(hostels[0]);
+// 	const [selectedHostel, setSelectedHostel] = useState<string>(
+// 		superAdminHostelOptions[0]
+// 	);
 
 // 	useEffect(() => {
 // 		async function fetchStudents() {
@@ -142,7 +138,7 @@
 // 										<SelectValue placeholder="Select Hostel" />
 // 									</SelectTrigger>
 // 									<SelectContent>
-// 										{hostels.map((h) => (
+// 										{superAdminHostelOptions.map((h) => (
 // 											<SelectItem key={h} value={h}>
 // 												{h}
 // 											</SelectItem>
@@ -332,6 +328,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { hostelNames } from "@/lib/hostels";
+import { fetchApi } from "@/lib/api";
 
 const superAdminHostelOptions = ["All Hostels", ...hostelNames];
 
@@ -361,7 +358,7 @@ export default function StudentDetailsPage() {
 		async function fetchStudents() {
 			setIsLoading(true);
 			try {
-				const res = await fetch("/api/students");
+				const res = await fetchApi("/api/students");
 				if (res.ok) {
 					const data = await res.json();
 					setStudents(data);

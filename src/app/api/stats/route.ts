@@ -2,9 +2,7 @@
 // import prisma from "@/lib/prisma";
 // import jwt from "jsonwebtoken";
 // import { cookies } from "next/headers";
-
-// // This is a static list from the signup form.
-// const hostels = ["Ganga", "Yamuna", "Saraswati", "Godavari", "Kaveri"];
+// import { hostelNames } from "@/lib/hostels";
 
 // export async function GET(req: NextRequest) {
 // 	const jwtSecret = process.env.JWT_SECRET;
@@ -39,7 +37,7 @@
 // 			return NextResponse.json({
 // 				studentCount,
 // 				adminCount,
-// 				hostelCount: hostels.length,
+// 				hostelCount: hostelNames.length,
 // 			});
 // 		}
 
@@ -104,14 +102,19 @@ export async function GET(req: NextRequest) {
 				where: { role: "ADMIN" },
 			});
 
+			const messAdminCount = await prisma.user.count({
+				where: { role: "MESSADMIN" },
+			});
+
 			return NextResponse.json({
 				studentCount,
 				adminCount,
+				messAdminCount,
 				hostelCount: hostelNames.length,
 			});
 		}
 
-		if (userRole === "ADMIN" || userRole === "MESSADMIN") {
+		if (userRole === "ADMIN") {
 			const studentCount = await prisma.user.count({
 				where: {
 					role: "STUDENT",
@@ -119,7 +122,10 @@ export async function GET(req: NextRequest) {
 					hostel: decoded.hostel,
 				},
 			});
-			return NextResponse.json({ studentCount });
+			const messAdminCount = await prisma.user.count({
+				where: { role: "MESSADMIN", hostel: decoded.hostel },
+			});
+			return NextResponse.json({ studentCount, messAdminCount });
 		}
 
 		// Default deny
