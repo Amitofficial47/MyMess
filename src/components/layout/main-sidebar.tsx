@@ -51,6 +51,9 @@
 // const messAdminNavItems = [
 // 	{ href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
 // 	{ href: "/profile", icon: User, label: "Profile" },
+// 	{ href: "/admin/menu", icon: Settings, label: "Edit Menu" },
+// 	{ href: "/admin/notifications", icon: Bell, label: "Add Notification" },
+// 	{ href: "/admin/feedback", icon: MessageSquare, label: "View Feedback" },
 // ];
 
 // const baseAdminNavItems = [
@@ -63,7 +66,6 @@
 // 	},
 // 	{ href: "/admin/verify-students", icon: UserCheck, label: "Verify Students" },
 // 	{ href: "/admin/student-details", icon: Users, label: "Student Details" },
-// 	{ href: "/admin/menu", icon: Settings, label: "Edit Menu" },
 // 	{ href: "/admin/history", icon: History, label: "Meal History" },
 // 	{ href: "/admin/bills", icon: Upload, label: "Upload Bill" },
 // 	{ href: "/admin/notifications", icon: Bell, label: "Add Notification" },
@@ -81,11 +83,13 @@
 // 	} else if (user?.role === "messadmin") {
 // 		navItems = messAdminNavItems;
 // 	} else if (user?.role === "superadmin") {
+// 		// Superadmin gets admin items plus their own extras
 // 		navItems = [
 // 			baseAdminNavItems[0], // Dashboard
 // 			baseAdminNavItems[1], // Profile
 // 			{ href: "/admin/manage-admins", icon: Shield, label: "Manage Admins" },
-// 			...baseAdminNavItems.slice(2),
+// 			...baseAdminNavItems.slice(2), // All other admin items
+// 			{ href: "/admin/menu", icon: Settings, label: "Edit Menu" }, // Superadmin can also edit menu
 // 		];
 // 	}
 
@@ -201,6 +205,7 @@ import {
 	UserCheck,
 	ShieldCheck,
 	Contact2,
+	LineChart,
 } from "lucide-react";
 import {
 	Tooltip,
@@ -240,6 +245,7 @@ const baseAdminNavItems = [
 	{ href: "/admin/verify-students", icon: UserCheck, label: "Verify Students" },
 	{ href: "/admin/student-details", icon: Users, label: "Student Details" },
 	{ href: "/admin/history", icon: History, label: "Meal History" },
+	{ href: "/admin/analytics", icon: LineChart, label: "Analytics" },
 	{ href: "/admin/bills", icon: Upload, label: "Upload Bill" },
 	{ href: "/admin/notifications", icon: Bell, label: "Add Notification" },
 	{ href: "/admin/feedback", icon: MessageSquare, label: "View Feedback" },
