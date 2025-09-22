@@ -106,7 +106,7 @@ export function SignupForm() {
 						<FormItem>
 							<FormLabel>Full Name</FormLabel>
 							<FormControl>
-								<Input placeholder="John Doe" {...field} />
+								<Input placeholder="Enter Your Name" {...field} />
 							</FormControl>
 							<FormMessage />
 						</FormItem>
@@ -119,7 +119,7 @@ export function SignupForm() {
 						<FormItem>
 							<FormLabel>Enrollment Number</FormLabel>
 							<FormControl>
-								<Input placeholder="e.g., A12345678" {...field} />
+								<Input placeholder="Your Enrollment No/UserID" {...field} />
 							</FormControl>
 							<FormMessage />
 						</FormItem>
@@ -132,7 +132,7 @@ export function SignupForm() {
 						<FormItem>
 							<FormLabel>Email</FormLabel>
 							<FormControl>
-								<Input placeholder="user@smp.com" {...field} />
+								<Input placeholder="Enter Your Email" {...field} />
 							</FormControl>
 							<FormMessage />
 						</FormItem>
@@ -145,7 +145,11 @@ export function SignupForm() {
 						<FormItem>
 							<FormLabel>Password</FormLabel>
 							<FormControl>
-								<Input type="password" placeholder="••••••••" {...field} />
+								<Input
+									type="password"
+									placeholder="Create a Password"
+									{...field}
+								/>
 							</FormControl>
 							<FormMessage />
 						</FormItem>

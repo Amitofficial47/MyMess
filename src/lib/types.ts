@@ -43,6 +43,7 @@ export interface MealSelection {
 	mealType: MealType;
 	token: string;
 	consumed: boolean;
+	quantity: number;
 	createdAt: string; // ISO date string
 }
 
@@ -67,4 +68,27 @@ export interface Feedback {
 	subject: string;
 	message: string;
 	createdAt: string; // ISO date string
+}
+
+export interface Addon {
+	id: string;
+	name: string;
+	price: number;
+	available: boolean;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface AddonConsumption {
+	id: string;
+	userId: string;
+	addonId: string;
+	mealSelectionId: string;
+	quantity: number;
+	priceAtConsumption: number;
+	consumed: boolean;
+	createdAt: string;
+	addon?: {
+		name: string;
+	};
 }

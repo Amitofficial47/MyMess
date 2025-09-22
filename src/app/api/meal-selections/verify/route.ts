@@ -29,10 +29,7 @@
 // // PATCH to verify a token
 // export async function PATCH(req: NextRequest) {
 // 	const adminUser = await getAuthUser(req);
-// 	if (
-// 		!adminUser ||
-// 		!["ADMIN", "MESSADMIN", "SUPERADMIN"].includes(adminUser.role)
-// 	) {
+// 	if (!adminUser || !["MESSADMIN", "SUPERADMIN"].includes(adminUser.role)) {
 // 		return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 // 	}
 
@@ -45,9 +42,9 @@
 
 // 		const today = new Date().toISOString().split("T")[0];
 
+// 		// Step 1: Find the selection first, without including the user, to avoid crashes.
 // 		const selection = await prisma.mealSelection.findUnique({
 // 			where: { token: token.toUpperCase(), date: today },
-// 			include: { user: true },
 // 		});
 
 // 		if (!selection) {
@@ -64,10 +61,25 @@
 // 			);
 // 		}
 
-// 		// Admins can only verify tokens for students in their own hostel
+// 		// Step 2: Now that we have a valid selection, fetch the associated user.
+// 		const studentUser = await prisma.user.findUnique({
+// 			where: { id: selection.userId },
+// 		});
+
+// 		if (!studentUser) {
+// 			return NextResponse.json(
+// 				{
+// 					error:
+// 						"Token is associated with a deleted user and cannot be verified.",
+// 				},
+// 				{ status: 404 }
+// 			);
+// 		}
+
+// 		// Step 3: Admins can only verify tokens for students in their own hostel.
 // 		if (
 // 			adminUser.role !== "SUPERADMIN" &&
-// 			selection.user.hostel !== adminUser.hostel
+// 			studentUser.hostel !== adminUser.hostel
 // 		) {
 // 			return NextResponse.json(
 // 				{ error: "You are not authorized to verify tokens for this hostel." },
@@ -75,20 +87,41 @@
 // 			);
 // 		}
 
-// 		const updatedSelection = await prisma.mealSelection.update({
-// 			where: { id: selection.id },
-// 			data: { consumed: true },
+// 		// Step 4: Use a transaction to update meal selection and related add-ons
+// 		const [updatedSelectionResult] = await prisma.$transaction([
+// 			prisma.mealSelection.update({
+// 				where: { id: selection.id },
+// 				data: { consumed: true },
+// 			}),
+// 			prisma.addonConsumption.updateMany({
+// 				where: { mealSelectionId: selection.id },
+// 				data: { consumed: true },
+// 			}),
+// 		]);
+
+// 		// Step 5: Fetch consumed addon details for the response
+// 		const consumedAddons = await prisma.addonConsumption.findMany({
+// 			where: { mealSelectionId: selection.id },
+// 			include: { addon: { select: { name: true } } },
 // 		});
 
-// 		return NextResponse.json(updatedSelection, { status: 200 });
+// 		const addonsResponse = consumedAddons.map((ca) => ({
+// 			name: ca.addon.name,
+// 			quantity: ca.quantity,
+// 			price: ca.priceAtConsumption,
+// 		}));
+
+// 		// Step 6: Construct response payload
+// 		const responseData = {
+// 			meal: {
+// 				...updatedSelectionResult,
+// 				studentName: studentUser.name,
+// 			},
+// 			addons: addonsResponse,
+// 		};
+
+// 		return NextResponse.json(responseData, { status: 200 });
 // 	} catch (error: any) {
-// 		if (error.code === "P2025") {
-// 			// Prisma code for record not found
-// 			return NextResponse.json(
-// 				{ error: "Token not found for today or is invalid." },
-// 				{ status: 404 }
-// 			);
-// 		}
 // 		console.error("Verify token error:", error);
 // 		return NextResponse.json(
 // 			{ error: "Internal server error" },
@@ -141,9 +174,9 @@ export async function PATCH(req: NextRequest) {
 
 		const today = new Date().toISOString().split("T")[0];
 
+		// Step 1: Find the selection first, without including the user, to avoid crashes.
 		const selection = await prisma.mealSelection.findUnique({
 			where: { token: token.toUpperCase(), date: today },
-			include: { user: true },
 		});
 
 		if (!selection) {
@@ -160,10 +193,25 @@ export async function PATCH(req: NextRequest) {
 			);
 		}
 
-		// Admins can only verify tokens for students in their own hostel
+		// Step 2: Now that we have a valid selection, fetch the associated user.
+		const studentUser = await prisma.user.findUnique({
+			where: { id: selection.userId },
+		});
+
+		if (!studentUser) {
+			return NextResponse.json(
+				{
+					error:
+						"Token is associated with a deleted user and cannot be verified.",
+				},
+				{ status: 404 }
+			);
+		}
+
+		// Step 3: Admins can only verify tokens for students in their own hostel.
 		if (
 			adminUser.role !== "SUPERADMIN" &&
-			selection.user.hostel !== adminUser.hostel
+			studentUser.hostel !== adminUser.hostel
 		) {
 			return NextResponse.json(
 				{ error: "You are not authorized to verify tokens for this hostel." },
@@ -171,12 +219,40 @@ export async function PATCH(req: NextRequest) {
 			);
 		}
 
-		const updatedSelection = await prisma.mealSelection.update({
-			where: { id: selection.id },
-			data: { consumed: true },
+		// Step 4: Use a transaction to update meal selection and related add-ons
+		const [updatedSelectionResult] = await prisma.$transaction([
+			prisma.mealSelection.update({
+				where: { id: selection.id },
+				data: { consumed: true },
+			}),
+			prisma.addonConsumption.updateMany({
+				where: { mealSelectionId: selection.id },
+				data: { consumed: true },
+			}),
+		]);
+
+		// Step 5: Fetch consumed addon details for the response
+		const consumedAddons = await prisma.addonConsumption.findMany({
+			where: { mealSelectionId: selection.id },
+			include: { addon: { select: { name: true } } },
 		});
 
-		return NextResponse.json(updatedSelection, { status: 200 });
+		const addonsResponse = consumedAddons.map((ca) => ({
+			name: ca.addon.name,
+			quantity: ca.quantity,
+			price: ca.priceAtConsumption,
+		}));
+
+		// Step 6: Construct response payload
+		const responseData = {
+			meal: {
+				...updatedSelectionResult,
+				studentName: studentUser.name,
+			},
+			addons: addonsResponse,
+		};
+
+		return NextResponse.json(responseData, { status: 200 });
 	} catch (error: any) {
 		if (error.code === "P2025") {
 			// Prisma code for record not found

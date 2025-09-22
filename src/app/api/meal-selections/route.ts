@@ -11,6 +11,8 @@ interface JwtPayload {
 	hostel: string;
 }
 
+const isValidObjectId = (id: string) => /^[0-9a-fA-F]{24}$/.test(id);
+
 async function getAuthUser(req: NextRequest): Promise<JwtPayload | null> {
 	const jwtSecret = process.env.JWT_SECRET;
 	if (!jwtSecret) {
@@ -22,6 +24,13 @@ async function getAuthUser(req: NextRequest): Promise<JwtPayload | null> {
 
 	try {
 		const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
+		if (!isValidObjectId(decoded.userId)) {
+			console.error(
+				"Invalid ObjectId in JWT for meal-selections API:",
+				decoded.userId
+			);
+			return null; // Treat as unauthenticated
+		}
 		return decoded;
 	} catch (error) {
 		return null;
@@ -58,7 +67,15 @@ export async function GET(req: NextRequest) {
 		});
 
 		return NextResponse.json(selections, { status: 200 });
-	} catch (error) {
+	} catch (error: any) {
+		if (error.code === "P2023") {
+			console.error(
+				"Data inconsistency error in GET /api/meal-selections:",
+				error.message
+			);
+			// Return empty array to prevent client-side crash
+			return NextResponse.json([], { status: 200 });
+		}
 		console.error("Get meal selections error:", error);
 		return NextResponse.json(
 			{ error: "Internal server error" },
@@ -70,18 +87,25 @@ export async function GET(req: NextRequest) {
 // POST to create a new meal selection
 export async function POST(req: NextRequest) {
 	const user = await getAuthUser(req);
-	if (!user || user.role !== "STUDENT") {
+	if (!user) {
+		return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+	}
+	if (user.role !== "STUDENT") {
 		return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 	}
 
 	try {
-		const { mealType, date } = await req.json();
+		const { mealType, date, quantity } = await req.json();
 
-		if (!mealType || !date) {
+		if (!mealType || !date || !quantity) {
 			return NextResponse.json(
-				{ error: "Missing meal type or date" },
+				{ error: "Missing meal type, date, or quantity" },
 				{ status: 400 }
 			);
+		}
+
+		if (typeof quantity !== "number" || quantity < 1 || quantity > 10) {
+			return NextResponse.json({ error: "Invalid quantity." }, { status: 400 });
 		}
 
 		// Check if a meal has already been selected for this type and day
@@ -108,11 +132,24 @@ export async function POST(req: NextRequest) {
 				date,
 				token: generateToken(),
 				consumed: false,
+				quantity: quantity,
 			},
 		});
 
 		return NextResponse.json(newSelection, { status: 201 });
-	} catch (error) {
+	} catch (error: any) {
+		if (error.code === "P2023") {
+			console.error(
+				"Data inconsistency error in POST /api/meal-selections:",
+				error.message
+			);
+			return NextResponse.json(
+				{
+					error: "A data inconsistency error occurred. Please contact support.",
+				},
+				{ status: 500 }
+			);
+		}
 		console.error("Create meal selection error:", error);
 		return NextResponse.json(
 			{ error: "Internal server error" },

@@ -1,137 +1,3 @@
-// "use client";
-
-// import { useState, useEffect } from 'react';
-// import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-// import { Button } from '@/components/ui/button';
-// import { useData } from '@/contexts/data-provider';
-// import { useAuth } from '@/contexts/auth-provider';
-// import type { MealType } from '@/lib/types';
-// import { useToast } from '@/hooks/use-toast';
-// import {
-//   AlertDialog,
-//   AlertDialogAction,
-//   AlertDialogContent,
-//   AlertDialogDescription,
-//   AlertDialogFooter,
-//   AlertDialogHeader,
-//   AlertDialogTitle,
-// } from "@/components/ui/alert-dialog";
-// import { Coffee, Sun, Moon } from 'lucide-react';
-// import { Skeleton } from '@/components/ui/skeleton';
-
-// export default function StudentDashboard() {
-//   const { user } = useAuth();
-//   const { addMealSelection, menu } = useData();
-//   const { toast } = useToast();
-//   const [showTokenDialog, setShowTokenDialog] = useState(false);
-//   const [generatedToken, setGeneratedToken] = useState('');
-//   const [today, setToday] = useState<string | null>(null);
-//   const [dayOfWeek, setDayOfWeek] = useState<keyof typeof menu | null>(null);
-
-//   useEffect(() => {
-//     const now = new Date();
-//     setToday(now.toISOString().split('T')[0]);
-//     setDayOfWeek(now.toLocaleDateString('en-US', { weekday: 'long' }) as keyof typeof menu);
-//   }, []);
-
-//   const handleMealSelection = (mealType: MealType) => {
-//     if (!user || !today || !dayOfWeek) return;
-
-//     if (!menu[dayOfWeek]?.[mealType]?.available) {
-//         toast({
-//             variant: "destructive",
-//             title: "Meal Unavailable",
-//             description: `${mealType} is not available today.`,
-//         });
-//         return;
-//     }
-
-//     const result = addMealSelection(user.id, mealType, today);
-//     if (result) {
-//       setGeneratedToken(result.token);
-//       setShowTokenDialog(true);
-//     } else {
-//       toast({
-//         variant: "destructive",
-//         title: "Already Selected",
-//         description: `You have already selected ${mealType} for today.`,
-//       });
-//     }
-//   };
-
-//   const MealCard = ({ mealType, icon: Icon }: { mealType: MealType, icon: React.ElementType }) => {
-//     if (!dayOfWeek) {
-//       return (
-//         <Card className="flex flex-col w-full sm:max-w-xs">
-//           <CardHeader className="flex-row items-center justify-center gap-4 space-y-0">
-//               <Icon className="h-8 w-8 text-primary"/>
-//               <CardTitle>{mealType}</CardTitle>
-//           </CardHeader>
-//           <CardContent className="flex-grow text-center">
-//               <Skeleton className="h-5 w-32 mx-auto" />
-//           </CardContent>
-//           <CardFooter>
-//               <Button className="w-full" disabled>Select Meal</Button>
-//           </CardFooter>
-//         </Card>
-//       );
-//     }
-
-//     const menuItem = menu[dayOfWeek]?.[mealType];
-
-//     return (
-//       <Card className="flex flex-col w-full sm:max-w-xs">
-//         <CardHeader className="flex-row items-center justify-center gap-4 space-y-0">
-//             <Icon className="h-8 w-8 text-primary"/>
-//             <CardTitle>{mealType}</CardTitle>
-//         </CardHeader>
-//         <CardContent className="flex-grow text-center">
-//             {menuItem?.available ? (
-//                 <p className="text-muted-foreground">{menuItem?.item}</p>
-//             ) : (
-//                 <p className="text-destructive font-semibold">Not Available</p>
-//             )}
-//         </CardContent>
-//         <CardFooter>
-//             <Button className="w-full" onClick={() => handleMealSelection(mealType)} disabled={!menuItem?.available}>Select Meal</Button>
-//         </CardFooter>
-//       </Card>
-//     );
-//   };
-
-//   return (
-//     <div className="flex flex-col items-center gap-8">
-//       <div className="text-center">
-//         <h1 className="text-2xl font-bold md:text-3xl lg:text-4xl">Welcome, {user?.name.split(' ')[0]}!</h1>
-//         <p className="text-muted-foreground">Select your meal for today and get your token.</p>
-//       </div>
-
-//       <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-//         <MealCard mealType="Breakfast" icon={Coffee} />
-//         <MealCard mealType="Lunch" icon={Sun} />
-//         <MealCard mealType="Dinner" icon={Moon} />
-//       </div>
-
-//       <AlertDialog open={showTokenDialog} onOpenChange={setShowTokenDialog}>
-//         <AlertDialogContent>
-//           <AlertDialogHeader>
-//             <AlertDialogTitle>Your Meal Token is Ready!</AlertDialogTitle>
-//             <AlertDialogDescription>
-//               Show this token at the mess counter to get your meal.
-//             </AlertDialogDescription>
-//           </AlertDialogHeader>
-//           <div className="my-6 flex items-center justify-center bg-muted p-4 rounded-md">
-//             <p className="text-4xl font-bold tracking-widest text-primary">{generatedToken}</p>
-//           </div>
-//           <AlertDialogFooter>
-//             <AlertDialogAction onClick={() => setShowTokenDialog(false)}>Close</AlertDialogAction>
-//           </AlertDialogFooter>
-//         </AlertDialogContent>
-//       </AlertDialog>
-//     </div>
-//   );
-// }
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -140,168 +6,372 @@ import {
 	CardHeader,
 	CardTitle,
 	CardContent,
-	CardFooter,
+	CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useData } from "@/contexts/data-provider";
 import { useAuth } from "@/contexts/auth-provider";
-import type { MealType } from "@/lib/types";
+import type { MealType, MealSelection, Addon, MenuItem } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Coffee, Sun, Moon, Loader2 } from "lucide-react";
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import {
+	Coffee,
+	Sun,
+	Moon,
+	Loader2,
+	PlusCircle,
+	CheckCircle,
+	Zap,
+	Plus,
+	Minus,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+
+const mealOptions: { mealType: MealType; icon: React.ElementType }[] = [
+	{ mealType: "Breakfast", icon: Coffee },
+	{ mealType: "Lunch", icon: Sun },
+	{ mealType: "Dinner", icon: Moon },
+];
+
+const MealRow = ({
+	mealType,
+	icon: Icon,
+	menuItem,
+	isGenerating,
+	onSelect,
+}: {
+	mealType: MealType;
+	icon: React.ElementType;
+	menuItem: MenuItem | undefined;
+	isGenerating: MealType | null;
+	onSelect: (mealType: MealType) => void;
+}) => {
+	const isLoading = isGenerating === mealType;
+	const isAvailable = menuItem?.available;
+
+	if (!menuItem) {
+		return (
+			<div className="flex flex-col md:flex-row items-center justify-between p-4 md:p-6 gap-4">
+				<div className="flex items-center gap-4 w-full md:w-auto">
+					<Skeleton className="h-8 w-8 rounded-md" />
+					<div className="flex-grow space-y-2">
+						<Skeleton className="h-5 w-24" />
+						<Skeleton className="h-4 w-48" />
+					</div>
+				</div>
+				<Skeleton className="h-10 w-full md:w-36" />
+			</div>
+		);
+	}
+
+	return (
+		<div className="flex flex-col md:flex-row items-center justify-between p-4 md:p-6 gap-4">
+			<div className="flex items-center gap-4 w-full md:w-auto">
+				<Icon className="h-8 w-8 text-primary shrink-0" />
+				<div className="flex-grow">
+					<h3 className="text-lg font-semibold">{mealType}</h3>
+					<p
+						className={cn(
+							"text-sm",
+							isAvailable
+								? "text-muted-foreground"
+								: "text-destructive font-medium"
+						)}
+					>
+						{menuItem.item || "Not Available"}
+					</p>
+				</div>
+			</div>
+			<Button
+				className="w-full md:w-auto shrink-0"
+				onClick={() => onSelect(mealType)}
+				disabled={!isAvailable || !!isGenerating}
+			>
+				{isLoading ? (
+					<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+				) : (
+					<Zap className="mr-2 h-4 w-4" />
+				)}
+				{isLoading ? "Generating..." : "Get Token"}
+			</Button>
+		</div>
+	);
+};
 
 export default function StudentDashboard() {
 	const { user } = useAuth();
-	const { addMealSelection, menu } = useData();
+	const {
+		addMealSelection,
+		menu,
+		addons,
+		addAddonConsumption,
+		addonConsumptions,
+	} = useData();
 	const { toast } = useToast();
+
 	const [showTokenDialog, setShowTokenDialog] = useState(false);
-	const [generatedToken, setGeneratedToken] = useState("");
+	const [activeSelection, setActiveSelection] = useState<MealSelection | null>(
+		null
+	);
+	const [addedAddonIds, setAddedAddonIds] = useState<Set<string>>(new Set());
+
 	const [today, setToday] = useState<string | null>(null);
 	const [dayOfWeek, setDayOfWeek] = useState<keyof typeof menu | null>(null);
+	const [dayOfWeekName, setDayOfWeekName] = useState<string>("");
 	const [isGenerating, setIsGenerating] = useState<MealType | null>(null);
+	const [isAddingAddon, setIsAddingAddon] = useState<string | null>(null);
+
+	const [configuringMeal, setConfiguringMeal] = useState<MealType | null>(null);
+	const [quantity, setQuantity] = useState(1);
 
 	useEffect(() => {
 		const now = new Date();
 		setToday(now.toISOString().split("T")[0]);
-		setDayOfWeek(
-			now.toLocaleDateString("en-US", { weekday: "long" }) as keyof typeof menu
-		);
+		const day = now.toLocaleDateString("en-US", {
+			weekday: "long",
+		}) as keyof typeof menu;
+		setDayOfWeek(day);
+		setDayOfWeekName(day);
 	}, []);
 
-	const handleMealSelection = async (mealType: MealType) => {
-		if (!user || !today) return;
+	useEffect(() => {
+		if (activeSelection) {
+			const existingAddonsForSelection = new Set(
+				addonConsumptions
+					.filter((ac) => ac.mealSelectionId === activeSelection.id)
+					.map((ac) => ac.addonId)
+			);
+			setAddedAddonIds(existingAddonsForSelection);
+		} else {
+			setAddedAddonIds(new Set());
+		}
+	}, [activeSelection, addonConsumptions]);
 
-		setIsGenerating(mealType);
+	const handleMealSelection = (mealType: MealType) => {
+		if (!user || !today || !dayOfWeek) return;
 
-		if (!menu[dayOfWeek!]?.[mealType]?.available) {
+		if (!menu[dayOfWeek]?.[mealType]?.available) {
 			toast({
 				variant: "destructive",
 				title: "Meal Unavailable",
 				description: `${mealType} is not available today.`,
 			});
-			setIsGenerating(null);
 			return;
 		}
 
-		const result = await addMealSelection(user.id, mealType, today);
+		setQuantity(1);
+		setConfiguringMeal(mealType);
+	};
+
+	const handleConfirmSelection = async () => {
+		if (!user || !today || !configuringMeal) return;
+
+		setIsGenerating(configuringMeal);
+
+		const result = await addMealSelection(
+			user.id,
+			configuringMeal,
+			today,
+			quantity
+		);
 
 		if (result.success && result.selection) {
-			setGeneratedToken(result.selection.token);
+			setActiveSelection(result.selection);
 			setShowTokenDialog(true);
 		} else {
 			toast({
 				variant: "destructive",
 				title: "Selection Failed",
 				description:
-					result.error || `You have already selected ${mealType} for today.`,
+					result.error ||
+					`You have already selected ${configuringMeal} for today.`,
 			});
 		}
+
 		setIsGenerating(null);
+		setConfiguringMeal(null);
 	};
 
-	const MealCard = ({
-		mealType,
-		icon: Icon,
-	}: {
-		mealType: MealType;
-		icon: React.ElementType;
-	}) => {
-		const isLoading = isGenerating === mealType;
-
-		if (!dayOfWeek) {
-			return (
-				<Card className="flex flex-col w-full sm:max-w-xs">
-					<CardHeader className="flex-row items-center justify-center gap-4 space-y-0">
-						<Icon className="h-8 w-8 text-primary" />
-						<CardTitle>{mealType}</CardTitle>
-					</CardHeader>
-					<CardContent className="flex-grow text-center">
-						<Skeleton className="h-5 w-32 mx-auto" />
-					</CardContent>
-					<CardFooter>
-						<Button className="w-full" disabled>
-							Select Meal
-						</Button>
-					</CardFooter>
-				</Card>
-			);
+	const handleAddonSelection = async (addon: Addon) => {
+		if (!activeSelection) return;
+		setIsAddingAddon(addon.id);
+		const result = await addAddonConsumption(addon.id, activeSelection.id);
+		if (result) {
+			toast({
+				title: "Add-on Added",
+				description: `${addon.name} has been added to your meal.`,
+			});
+			setAddedAddonIds((prev) => new Set(prev).add(addon.id));
+		} else {
+			toast({
+				variant: "destructive",
+				title: "Failed to Add",
+				description: `Could not add ${addon.name}. Please try again.`,
+			});
 		}
-
-		const menuItem = menu[dayOfWeek]?.[mealType];
-
-		return (
-			<Card className="flex flex-col w-full sm:max-w-xs">
-				<CardHeader className="flex-row items-center justify-center gap-4 space-y-0">
-					<Icon className="h-8 w-8 text-primary" />
-					<CardTitle>{mealType}</CardTitle>
-				</CardHeader>
-				<CardContent className="flex-grow text-center">
-					{menuItem?.available ? (
-						<p className="text-muted-foreground">{menuItem?.item}</p>
-					) : (
-						<p className="text-destructive font-semibold">Not Available</p>
-					)}
-				</CardContent>
-				<CardFooter>
-					<Button
-						className="w-full"
-						onClick={() => handleMealSelection(mealType)}
-						disabled={!menuItem?.available || !!isGenerating}
-					>
-						{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-						Select Meal
-					</Button>
-				</CardFooter>
-			</Card>
-		);
+		setIsAddingAddon(null);
 	};
 
 	return (
-		<div className="flex flex-col items-center gap-8">
+		<div className="flex flex-col gap-8">
 			<div className="text-center">
-				<h1 className="text-2xl font-bold md:text-3xl lg:text-4xl">
-					Welcome, {user?.name.split(" ")[0]}!
+				<h1 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
+					Today's Menu
 				</h1>
-				<p className="text-muted-foreground">
-					Select your meal for today and get your token.
+				<p className="text-muted-foreground md:text-xl">
+					Hello {user?.name.split(" ")[0]}! Here's what's available for{" "}
+					{dayOfWeekName}.
 				</p>
 			</div>
 
-			<div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-				<MealCard mealType="Breakfast" icon={Coffee} />
-				<MealCard mealType="Lunch" icon={Sun} />
-				<MealCard mealType="Dinner" icon={Moon} />
-			</div>
+			<Card className="w-full">
+				<CardHeader>
+					<CardTitle>Select Your Meal</CardTitle>
+					<CardDescription>
+						Choose from the available options below to generate your unique meal
+						token.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="p-0">
+					<div className="divide-y divide-border">
+						{mealOptions.map(({ mealType, icon }) => (
+							<MealRow
+								key={mealType}
+								mealType={mealType}
+								icon={icon}
+								menuItem={dayOfWeek ? menu[dayOfWeek]?.[mealType] : undefined}
+								isGenerating={isGenerating}
+								onSelect={handleMealSelection}
+							/>
+						))}
+					</div>
+				</CardContent>
+			</Card>
 
-			<AlertDialog open={showTokenDialog} onOpenChange={setShowTokenDialog}>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>Your Meal Token is Ready!</AlertDialogTitle>
-						<AlertDialogDescription>
-							Show this token at the mess counter to get your meal.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<div className="my-6 flex items-center justify-center bg-muted p-4 rounded-md">
+			{/* Quantity Selection Dialog */}
+			<Dialog
+				open={!!configuringMeal}
+				onOpenChange={(isOpen) => !isOpen && setConfiguringMeal(null)}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Select Quantity for {configuringMeal}</DialogTitle>
+						<DialogDescription>
+							How many meals would you like to get a token for?
+						</DialogDescription>
+					</DialogHeader>
+					<div className="flex items-center justify-center gap-4 py-4">
+						<Button
+							variant="outline"
+							size="icon"
+							onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+						>
+							<Minus className="h-4 w-4" />
+						</Button>
+						<span className="text-2xl font-bold w-12 text-center">
+							{quantity}
+						</span>
+						<Button
+							variant="outline"
+							size="icon"
+							onClick={() => setQuantity((q) => Math.min(10, q + 1))}
+						>
+							<Plus className="h-4 w-4" />
+						</Button>
+					</div>
+					<DialogFooter>
+						<Button variant="ghost" onClick={() => setConfiguringMeal(null)}>
+							Cancel
+						</Button>
+						<Button
+							onClick={handleConfirmSelection}
+							disabled={isGenerating === configuringMeal}
+						>
+							{isGenerating === configuringMeal && (
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							)}
+							Generate Token
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Token Display Dialog */}
+			<Dialog open={showTokenDialog} onOpenChange={setShowTokenDialog}>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>Your Meal Token</DialogTitle>
+						<DialogDescription>
+							Show this token at the counter. You can also add extras to your
+							meal.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="my-4 flex items-center justify-center bg-muted p-4 rounded-md">
 						<p className="text-4xl font-bold tracking-widest text-primary">
-							{generatedToken}
+							{activeSelection?.token}
 						</p>
 					</div>
-					<AlertDialogFooter>
-						<AlertDialogAction onClick={() => setShowTokenDialog(false)}>
-							Close
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+
+					<Separator />
+
+					<div className="pt-2">
+						<h3 className="text-lg font-semibold mb-2">Add Extras</h3>
+						<div className="space-y-2 max-h-48 overflow-y-auto">
+							{addons
+								.filter((a) => a.available)
+								.map((addon) => {
+									const isAdded = addedAddonIds.has(addon.id);
+									return (
+										<div
+											key={addon.id}
+											className="flex items-center justify-between p-2 rounded-md border"
+										>
+											<div>
+												<p className="font-medium">{addon.name}</p>
+												<p className="text-sm text-muted-foreground">
+													₹{addon.price.toFixed(2)}
+												</p>
+											</div>
+											<Button
+												size="sm"
+												variant={isAdded ? "secondary" : "outline"}
+												onClick={() => !isAdded && handleAddonSelection(addon)}
+												disabled={!!isAddingAddon || isAdded}
+											>
+												{isAddingAddon === addon.id ? (
+													<Loader2 className="h-4 w-4 animate-spin" />
+												) : isAdded ? (
+													<>
+														<CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+														Added
+													</>
+												) : (
+													<>
+														<PlusCircle className="mr-2 h-4 w-4" />
+														Add
+													</>
+												)}
+											</Button>
+										</div>
+									);
+								})}
+						</div>
+					</div>
+
+					<DialogFooter>
+						<Button onClick={() => setShowTokenDialog(false)}>Done</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

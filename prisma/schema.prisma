@@ -1,3 +1,8 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -9,48 +14,77 @@ datasource db {
 }
 
 model User {
-  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
-  displayId            String    @unique
-  name                 String
-  email                String    @unique
-  password             String
-  enrollmentNumber     String?   @unique
-  course               String?
-  role                 UserRole  @default(STUDENT)
-  status               VerificationStatus @default(PENDING)
-  hostel               String
-  avatar               String?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  
-  mealSelections       MealSelection[]
-  feedback             Feedback[]
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  displayId        String    @unique // Auto-generated user-friendly ID
+  name             String
+  email            String    @unique
+  password         String
+  enrollmentNumber String?   @unique
+  course           String?
+  role             UserRole  @default(STUDENT)
+  status           VerificationStatus @default(PENDING)
+  hostel           String
+  avatar           String? // URL to user's avatar image
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  passwordResetOtp         String?
-  passwordResetOtpExpires  DateTime?
+  mealSelections    MealSelection[]
+  addonConsumptions AddonConsumption[]
+  feedback          Feedback[]
 }
 
 model MenuItem {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  dayOfWeek   DayOfWeek
-  mealType    MealType
-  item        String
-  notes       String?
-  available   Boolean
-  
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  dayOfWeek  DayOfWeek
+  mealType   MealType
+  item       String
+  notes      String?
+  available  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
   @@unique([dayOfWeek, mealType])
 }
 
 model MealSelection {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String // YYYY-MM-DD format
+  mealType  MealType
+  token     String   @unique
+  consumed  Boolean  @default(false)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  addonConsumptions AddonConsumption[]
+
+  @@unique([userId, date, mealType])
+}
+
+model Addon {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique
+  price       Float
+  available   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  consumptions AddonConsumption[]
+}
+
+model AddonConsumption {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   userId      String   @db.ObjectId
-  date        String
-  mealType    MealType
-  token       String   @unique
-  consumed    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addonId     String   @db.ObjectId
+  addon       Addon    @relation(fields: [addonId], references: [id], onDelete: Cascade)
+  mealSelectionId String @db.ObjectId
+  mealSelection   MealSelection @relation(fields: [mealSelectionId], references: [id], onDelete: Cascade)
+  quantity    Int
+  priceAtConsumption Float
+  consumed    Boolean @default(false)
+  createdAt   DateTime @default(now())
 }
 
 model Notification {
@@ -61,20 +95,19 @@ model Notification {
 }
 
 model Bill {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  fileName    String
-  uploadDate  DateTime @default(now())
-  month       String
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  fileName   String
+  uploadDate DateTime @default(now())
+  month      String
 }
 
 model Feedback {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   subject   String
   message   String
   createdAt DateTime @default(now())
-  
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum UserRole {
@@ -84,10 +117,10 @@ enum UserRole {
   MESSADMIN
 }
 
-enum VerificationStatus {
-  PENDING
-  APPROVED
-  REJECTED
+enum MealType {
+  Breakfast
+  Lunch
+  Dinner
 }
 
 enum DayOfWeek {
@@ -100,8 +133,8 @@ enum DayOfWeek {
   Sunday
 }
 
-enum MealType {
-  Breakfast
-  Lunch
-  Dinner
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
